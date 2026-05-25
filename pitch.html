@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naipe Blue — Pitch Deck</title>
+    <style>
+        :root {
+            --navy:    #080F1E;
+            --blue-dk: #0D1F3C;
+            --blue-md: #1A3560;
+            --blue-el: #1E90FF;
+            --gold:    #C9A84C;
+            --gold-lt: #E8C97A;
+            --white:   #FFFFFF;
+            --gray:    rgba(255,255,255,.55);
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior:smooth; }
+        body {
+            font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+            background:var(--navy);
+            color:var(--white);
+            overflow-x:hidden;
+        }
+
+        /* ── SLIDE BASE ── */
+        .slide {
+            min-height:100vh;
+            display:flex; flex-direction:column;
+            justify-content:center; align-items:center;
+            padding:80px 100px;
+            position:relative; overflow:hidden;
+            border-bottom:1px solid rgba(255,255,255,.06);
+        }
+
+        /* números de slide */
+        .slide-num {
+            position:absolute; bottom:32px; right:40px;
+            font-size:12px; font-weight:700; letter-spacing:3px;
+            color:rgba(255,255,255,.18); text-transform:uppercase;
+        }
+
+        /* decorações */
+        .deco-suit {
+            position:absolute; font-size:380px;
+            color:rgba(255,255,255,.025); pointer-events:none;
+            line-height:1;
+        }
+
+        /* ── SLIDE 1 — CAPA ── */
+        .slide-cover {
+            background: radial-gradient(ellipse at 70% 40%, rgba(30,144,255,.18) 0%, transparent 60%),
+                        radial-gradient(ellipse at 20% 80%, rgba(201,168,76,.1) 0%, transparent 50%),
+                        var(--navy);
+            text-align:center;
+        }
+        .cover-badge {
+            display:inline-flex; align-items:center; gap:8px;
+            background:rgba(201,168,76,.12); border:1px solid rgba(201,168,76,.35);
+            color:var(--gold); padding:7px 20px; border-radius:100px;
+            font-size:13px; font-weight:700; letter-spacing:1px;
+            margin-bottom:32px;
+        }
+        .cover-logo { margin-bottom:8px; }
+        .cover-logo img { height:140px; width:auto; mix-blend-mode:lighten; }
+        .cover-tagline {
+            font-size:22px; color:rgba(255,255,255,.55);
+            font-weight:400; margin-bottom:48px;
+        }
+        .suits-row { display:flex; gap:40px; justify-content:center; }
+        .suit-chip {
+            display:flex; align-items:center; gap:8px;
+            background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+            padding:10px 20px; border-radius:100px;
+            font-size:14px; font-weight:600;
+        }
+        .suit-chip b { color:var(--gold); font-style:normal; }
+
+        /* ── SLIDE 2 — PROBLEMA ── */
+        .slide-problem { background:var(--navy); }
+        .problem-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; width:100%; max-width:900px; }
+        .stat-card {
+            background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09);
+            border-radius:16px; padding:36px;
+        }
+        .stat-num { font-size:56px; font-weight:900; color:var(--blue-el); line-height:1; margin-bottom:10px; }
+        .stat-num em { font-style:normal; color:var(--gold); }
+        .stat-label { font-size:16px; color:rgba(255,255,255,.6); line-height:1.5; }
+        .problem-quote {
+            max-width:700px; text-align:center; margin-top:50px;
+            font-size:20px; color:rgba(255,255,255,.55); font-style:italic; line-height:1.7;
+        }
+        .problem-quote strong { color:var(--gold); font-style:normal; }
+
+        /* ── SLIDE 3 — SOLUÇÃO ── */
+        .slide-solution {
+            background:linear-gradient(135deg, var(--navy) 0%, var(--blue-dk) 60%, var(--blue-md) 100%);
+        }
+        .solution-content { display:grid; grid-template-columns:1fr 1fr; gap:60px; width:100%; max-width:1000px; align-items:center; }
+        .sol-left h2 { font-size:52px; font-weight:900; line-height:1.05; letter-spacing:-1.5px; margin-bottom:20px; }
+        .sol-left h2 em { font-style:normal; color:var(--blue-el); }
+        .sol-left p { font-size:17px; color:rgba(255,255,255,.6); line-height:1.7; }
+        .sol-right { display:flex; flex-direction:column; gap:18px; }
+        .sol-item {
+            display:flex; align-items:flex-start; gap:14px;
+            background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09);
+            border-radius:12px; padding:20px;
+        }
+        .sol-icon { font-size:28px; flex-shrink:0; }
+        .sol-item h4 { font-size:15px; font-weight:700; margin-bottom:4px; }
+        .sol-item p { font-size:13px; color:rgba(255,255,255,.5); line-height:1.5; }
+
+        /* ── SLIDE 4 — COMO FUNCIONA ── */
+        .slide-how { background:var(--navy); }
+        .how-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; width:100%; max-width:1000px; margin-top:50px; }
+        .how-card {
+            background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09);
+            border-radius:16px; padding:28px 20px; text-align:center;
+            position:relative;
+        }
+        .how-suit { font-size:44px; margin-bottom:14px; display:block; }
+        .how-step { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--blue-el); margin-bottom:8px; }
+        .how-card h4 { font-size:17px; font-weight:800; margin-bottom:8px; }
+        .how-card p { font-size:13px; color:rgba(255,255,255,.48); line-height:1.55; }
+        .how-arrow {
+            position:absolute; right:-16px; top:50%; transform:translateY(-50%);
+            color:rgba(255,255,255,.2); font-size:20px; z-index:1;
+        }
+
+        /* ── SLIDE 5 — MERCADO ── */
+        .slide-market { background:var(--blue-dk); }
+        .market-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:32px; width:100%; max-width:900px; margin-top:50px; }
+        .market-card {
+            text-align:center; padding:36px 24px;
+            background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2);
+            border-radius:16px;
+        }
+        .market-val { font-size:48px; font-weight:900; color:var(--gold); line-height:1; margin-bottom:10px; }
+        .market-label { font-size:14px; color:rgba(255,255,255,.55); line-height:1.5; }
+
+        /* ── SLIDE 6 — DIFERENCIAIS ── */
+        .slide-diff { background:var(--navy); }
+        .diff-vs {
+            display:grid; grid-template-columns:1fr auto 1fr; gap:32px; width:100%; max-width:900px; margin-top:50px; align-items:start;
+        }
+        .vs-col h4 { font-size:16px; font-weight:800; margin-bottom:20px; color:rgba(255,255,255,.5); }
+        .vs-col.ours h4 { color:var(--gold); }
+        .vs-item {
+            display:flex; align-items:center; gap:10px;
+            padding:12px 0; border-bottom:1px solid rgba(255,255,255,.07);
+            font-size:14px; color:rgba(255,255,255,.5);
+        }
+        .vs-item.good { color:var(--white); }
+        .vs-item.good::before { content:'✓'; color:var(--gold); font-weight:800; }
+        .vs-item.bad::before { content:'✗'; color:rgba(255,255,255,.3); }
+        .vs-divider { display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900; color:rgba(255,255,255,.2); padding-top:50px; }
+
+        /* ── SLIDE 7 — MODELO DE NEGÓCIO ── */
+        .slide-biz { background:linear-gradient(135deg,var(--navy),var(--blue-md)); }
+        .plans-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; width:100%; max-width:880px; margin-top:50px; }
+        .plan-card {
+            background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+            border-radius:16px; padding:32px 24px; text-align:center;
+        }
+        .plan-card.featured {
+            background:rgba(201,168,76,.1); border-color:var(--gold);
+            transform:scale(1.04);
+        }
+        .plan-suit { font-size:36px; margin-bottom:12px; display:block; }
+        .plan-name { font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.5); margin-bottom:12px; }
+        .plan-card.featured .plan-name { color:var(--gold); }
+        .plan-price { font-size:42px; font-weight:900; color:var(--white); line-height:1; margin-bottom:6px; }
+        .plan-per { font-size:13px; color:rgba(255,255,255,.4); margin-bottom:20px; }
+        .plan-features { list-style:none; text-align:left; }
+        .plan-features li {
+            padding:8px 0; border-bottom:1px solid rgba(255,255,255,.06);
+            font-size:13px; color:rgba(255,255,255,.6);
+            display:flex; align-items:center; gap:8px;
+        }
+        .plan-features li::before { content:'♦'; color:var(--gold); font-size:10px; }
+
+        /* ── SLIDE 8 — TRAÇÃO ── */
+        .slide-traction { background:var(--navy); }
+        .traction-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; width:100%; max-width:900px; margin-top:50px; }
+        .traction-card {
+            background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+            border-radius:16px; padding:28px; text-align:center;
+        }
+        .traction-num { font-size:44px; font-weight:900; color:var(--blue-el); line-height:1; margin-bottom:8px; }
+        .traction-label { font-size:13px; color:rgba(255,255,255,.45); }
+
+        /* ── SLIDE 9 — CALL TO ACTION ── */
+        .slide-cta {
+            background: radial-gradient(ellipse at 50% 50%, rgba(30,144,255,.25) 0%, transparent 70%), var(--navy);
+            text-align:center;
+        }
+        .cta-suits { font-size:40px; letter-spacing:20px; color:rgba(255,255,255,.15); margin-bottom:32px; }
+        .cta-title { font-size:64px; font-weight:900; letter-spacing:-2px; line-height:1.0; margin-bottom:20px; }
+        .cta-title em { font-style:normal; color:var(--blue-el); }
+        .cta-sub { font-size:20px; color:rgba(255,255,255,.55); margin-bottom:50px; }
+        .cta-contacts { display:flex; gap:40px; justify-content:center; flex-wrap:wrap; }
+        .contact-item { display:flex; flex-direction:column; align-items:center; gap:8px; }
+        .contact-label { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); }
+        .contact-val { font-size:16px; color:rgba(255,255,255,.8); }
+
+        /* ── SLIDE HEADER ── */
+        .slide-header {
+            text-align:center; margin-bottom:0; width:100%;
+        }
+        .slide-header .tag {
+            font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase;
+            color:var(--blue-el); margin-bottom:12px; display:block;
+        }
+        .slide-header .tag.gold { color:var(--gold); }
+        .slide-header h2 {
+            font-size:48px; font-weight:900; letter-spacing:-1.5px; line-height:1.05;
+        }
+
+        /* NAV PROGRESS */
+        .progress-nav {
+            position:fixed; right:24px; top:50%; transform:translateY(-50%);
+            display:flex; flex-direction:column; gap:10px; z-index:100;
+        }
+        .prog-dot {
+            width:8px; height:8px; border-radius:50%;
+            background:rgba(255,255,255,.2); cursor:pointer; transition:all .2s;
+            text-decoration:none; display:block;
+        }
+        .prog-dot:hover, .prog-dot.active { background:var(--gold); transform:scale(1.4); }
+
+        @media(max-width:900px){
+            .slide { padding:60px 24px; }
+            .cover-logo { font-size:52px; }
+            .problem-grid, .solution-content, .diff-vs, .plans-grid, .how-grid, .market-grid, .traction-grid { grid-template-columns:1fr; }
+            .suits-row { flex-wrap:wrap; gap:16px; }
+            .sol-right { display:none; }
+            .cta-title { font-size:42px; }
+            .how-arrow { display:none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- PROGRESS NAV -->
+<nav class="progress-nav">
+    <a href="#s1" class="prog-dot active" title="Capa"></a>
+    <a href="#s2" class="prog-dot" title="Problema"></a>
+    <a href="#s3" class="prog-dot" title="Solução"></a>
+    <a href="#s4" class="prog-dot" title="Como funciona"></a>
+    <a href="#s5" class="prog-dot" title="Mercado"></a>
+    <a href="#s6" class="prog-dot" title="Diferenciais"></a>
+    <a href="#s7" class="prog-dot" title="Modelo"></a>
+    <a href="#s8" class="prog-dot" title="Tração"></a>
+    <a href="#s9" class="prog-dot" title="CTA"></a>
+</nav>
+
+<!-- ═══ SLIDE 1 — CAPA ═══ -->
+<section class="slide slide-cover" id="s1">
+    <span class="deco-suit" style="top:-80px;right:-80px;">♦</span>
+    <div class="cover-badge">♠ ♥ ♦ ♣ &nbsp; Pitch Deck 2026</div>
+    <div class="cover-logo"><img src="logo.png" alt="Naipe Blue"></div>
+    <div class="cover-tagline">Performance masculina, do jeito certo.</div>
+    <div class="suits-row">
+        <div class="suit-chip"><b>♠</b> Confiança</div>
+        <div class="suit-chip"><b>♥</b> Prazer</div>
+        <div class="suit-chip"><b>♦</b> Performance</div>
+        <div class="suit-chip"><b>♣</b> Controle</div>
+    </div>
+    <div class="slide-num">01 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 2 — PROBLEMA ═══ -->
+<section class="slide slide-problem" id="s2">
+    <span class="deco-suit" style="bottom:-120px;left:-80px;color:rgba(255,255,255,.02);">♠</span>
+    <div class="slide-header">
+        <span class="tag">O problema</span>
+        <h2>Milhões de homens sofrem <br>em <em style="color:var(--blue-el)">silêncio.</em></h2>
+    </div>
+    <div class="problem-grid" style="margin-top:50px;">
+        <div class="stat-card">
+            <div class="stat-num">52<em>%</em></div>
+            <div class="stat-label">dos homens entre 40 e 70 anos têm algum grau de disfunção erétil</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">70<em>%</em></div>
+            <div class="stat-label">nunca buscaram ajuda médica por vergonha ou falta de acesso</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">R$<em>4bi</em></div>
+            <div class="stat-label">mercado de saúde masculina íntima no Brasil em 2025</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num">3<em>x</em></div>
+            <div class="stat-label">crescimento do segmento de saúde digital masculina nos últimos 3 anos</div>
+        </div>
+    </div>
+    <p class="problem-quote">"O problema não é a falta de solução. É a <strong>falta de acesso discreto, rápido e personalizado.</strong>"</p>
+    <div class="slide-num">02 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 3 — SOLUÇÃO ═══ -->
+<section class="slide slide-solution" id="s3">
+    <div class="solution-content">
+        <div class="sol-left">
+            <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;">A solução</div>
+            <h2>Naipe Blue:<br><em>vire o jogo.</em></h2>
+            <p style="margin-top:20px;">Uma plataforma completa de saúde masculina íntima — com consulta online, prescrição personalizada e entrega discreta em todo o Brasil.</p>
+            <p style="margin-top:16px;">O processo mais rápido do mercado: <strong style="color:var(--gold)">do quiz à prescrição em menos de 10 minutos.</strong></p>
+        </div>
+        <div class="sol-right">
+            <div class="sol-item">
+                <span class="sol-icon">⚡</span>
+                <div>
+                    <h4>Mais rápido que qualquer concorrente</h4>
+                    <p>Quiz + análise médica + prescrição em menos de 10 minutos.</p>
+                </div>
+            </div>
+            <div class="sol-item">
+                <span class="sol-icon">🎯</span>
+                <div>
+                    <h4>Personalização real</h4>
+                    <p>Cada fórmula é manipulada especificamente para o perfil do cliente.</p>
+                </div>
+            </div>
+            <div class="sol-item">
+                <span class="sol-icon">🔒</span>
+                <div>
+                    <h4>Privacidade total</h4>
+                    <p>Da consulta à entrega, 100% discreto. Embalagem neutra, processo online.</p>
+                </div>
+            </div>
+            <div class="sol-item">
+                <span class="sol-icon">👨‍⚕️</span>
+                <div>
+                    <h4>Suporte médico contínuo</h4>
+                    <p>Especialista acompanha o tratamento do início ao fim.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-num">03 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 4 — COMO FUNCIONA ═══ -->
+<section class="slide slide-how" id="s4">
+    <span class="deco-suit" style="top:-100px;right:-60px;color:rgba(255,255,255,.02);">♣</span>
+    <div class="slide-header">
+        <span class="tag">O processo</span>
+        <h2>4 naipes. <em style="color:var(--blue-el)">4 etapas.</em></h2>
+    </div>
+    <div class="how-grid">
+        <div class="how-card">
+            <span class="how-suit">♠</span>
+            <div class="how-step">Passo 1</div>
+            <h4>Quiz</h4>
+            <p>2 minutos de perguntas para mapear o perfil do cliente.</p>
+            <span class="how-arrow">→</span>
+        </div>
+        <div class="how-card">
+            <span class="how-suit">♥</span>
+            <div class="how-step">Passo 2</div>
+            <h4>Análise Médica</h4>
+            <p>Especialista avalia e valida o tratamento ideal.</p>
+            <span class="how-arrow">→</span>
+        </div>
+        <div class="how-card">
+            <span class="how-suit">♦</span>
+            <div class="how-step">Passo 3</div>
+            <h4>Prescrição</h4>
+            <p>Fórmula manipulada por farmácia parceira registrada.</p>
+            <span class="how-arrow">→</span>
+        </div>
+        <div class="how-card">
+            <span class="how-suit">♣</span>
+            <div class="how-step">Passo 4</div>
+            <h4>Entrega</h4>
+            <p>Embalagem neutra, discreta, entregue em casa.</p>
+        </div>
+    </div>
+    <div class="slide-num">04 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 5 — MERCADO ═══ -->
+<section class="slide slide-market" id="s5">
+    <div class="slide-header">
+        <span class="tag gold">Oportunidade de mercado</span>
+        <h2>Um mercado gigante <br><em style="color:var(--gold)">e mal atendido.</em></h2>
+    </div>
+    <div class="market-grid">
+        <div class="market-card">
+            <div class="market-val">R$4bi</div>
+            <div class="market-label">Mercado total de saúde masculina íntima no Brasil (2025)</div>
+        </div>
+        <div class="market-card">
+            <div class="market-val">3x</div>
+            <div class="market-label">Crescimento do segmento de saúde digital masculina nos últimos 3 anos</div>
+        </div>
+        <div class="market-card">
+            <div class="market-val">+60M</div>
+            <div class="market-label">Homens acima de 30 anos no Brasil — público potencial direto</div>
+        </div>
+    </div>
+    <div class="slide-num">05 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 6 — DIFERENCIAIS ═══ -->
+<section class="slide slide-diff" id="s6">
+    <span class="deco-suit" style="bottom:-80px;right:-60px;color:rgba(255,255,255,.02);">♥</span>
+    <div class="slide-header">
+        <span class="tag">Posicionamento</span>
+        <h2>Naipe Blue vs <em style="color:var(--blue-el)">mercado.</em></h2>
+    </div>
+    <div class="diff-vs">
+        <div class="vs-col">
+            <h4>Concorrentes</h4>
+            <div class="vs-item bad">Processo lento (dias)</div>
+            <div class="vs-item bad">Fórmula genérica</div>
+            <div class="vs-item bad">Pouca personalização</div>
+            <div class="vs-item bad">UX complicada</div>
+            <div class="vs-item bad">Atendimento frio</div>
+            <div class="vs-item bad">Marca sem identidade</div>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="vs-col ours">
+            <h4>♦ Naipe Blue</h4>
+            <div class="vs-item good">Quiz → prescrição em 10 min</div>
+            <div class="vs-item good">Fórmula 100% personalizada</div>
+            <div class="vs-item good">IA + médico especialista</div>
+            <div class="vs-item good">Jornada fluida e discreta</div>
+            <div class="vs-item good">Suporte humanizado</div>
+            <div class="vs-item good">Marca forte com conceito</div>
+        </div>
+    </div>
+    <div class="slide-num">06 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 7 — MODELO DE NEGÓCIO ═══ -->
+<section class="slide slide-biz" id="s7">
+    <div class="slide-header">
+        <span class="tag gold">Modelo de negócio</span>
+        <h2>Planos para cada <em style="color:var(--gold)">jogada.</em></h2>
+    </div>
+    <div class="plans-grid">
+        <div class="plan-card">
+            <span class="plan-suit">♠</span>
+            <div class="plan-name">Básico</div>
+            <div class="plan-price">R$129</div>
+            <div class="plan-per">por mês</div>
+            <ul class="plan-features">
+                <li>Quiz + análise médica</li>
+                <li>Fórmula personalizada</li>
+                <li>Entrega discreta</li>
+                <li>1 renovação/mês</li>
+            </ul>
+        </div>
+        <div class="plan-card featured">
+            <span class="plan-suit">♦</span>
+            <div class="plan-name">Premium</div>
+            <div class="plan-price">R$199</div>
+            <div class="plan-per">por mês</div>
+            <ul class="plan-features">
+                <li>Tudo do básico</li>
+                <li>Suporte médico prioritário</li>
+                <li>Ajuste de fórmula</li>
+                <li>Entrega expressa</li>
+            </ul>
+        </div>
+        <div class="plan-card">
+            <span class="plan-suit">♣</span>
+            <div class="plan-name">Anual</div>
+            <div class="plan-price">R$149</div>
+            <div class="plan-per">por mês (cobrado anualmente)</div>
+            <ul class="plan-features">
+                <li>Tudo do premium</li>
+                <li>Desconto de 25%</li>
+                <li>Consultas ilimitadas</li>
+                <li>Prioridade em novidades</li>
+            </ul>
+        </div>
+    </div>
+    <div class="slide-num">07 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 8 — TRAÇÃO ═══ -->
+<section class="slide slide-traction" id="s8">
+    <span class="deco-suit" style="top:-60px;left:-80px;color:rgba(255,255,255,.02);">♦</span>
+    <div class="slide-header">
+        <span class="tag">Projeções</span>
+        <h2>Metas para os <em style="color:var(--blue-el)">próximos 12 meses.</em></h2>
+    </div>
+    <div class="traction-grid">
+        <div class="traction-card">
+            <div class="traction-num">5k</div>
+            <div class="traction-label">Clientes ativos no primeiro ano</div>
+        </div>
+        <div class="traction-card">
+            <div class="traction-num">R$1M</div>
+            <div class="traction-label">Receita recorrente anual (ARR)</div>
+        </div>
+        <div class="traction-card">
+            <div class="traction-num">R$89</div>
+            <div class="traction-label">Custo de aquisição de cliente (CAC)</div>
+        </div>
+        <div class="traction-card">
+            <div class="traction-num">85%</div>
+            <div class="traction-label">Taxa de retenção mensal projetada</div>
+        </div>
+    </div>
+    <div style="margin-top:48px; max-width:700px; text-align:center;">
+        <p style="font-size:16px;color:rgba(255,255,255,.45);line-height:1.7;">
+            Estratégia de aquisição via <strong style="color:var(--white)">Meta Ads + influenciadores de saúde masculina</strong> e
+            funil de retenção via WhatsApp com <strong style="color:var(--white)">NPS trimestral</strong>.
+        </p>
+    </div>
+    <div class="slide-num">08 / 09</div>
+</section>
+
+<!-- ═══ SLIDE 9 — CTA ═══ -->
+<section class="slide slide-cta" id="s9">
+    <span class="deco-suit" style="top:-100px;right:-80px;color:rgba(255,255,255,.03);">♦</span>
+    <div class="cta-suits">♠ ♥ ♦ ♣</div>
+    <h2 class="cta-title">Vamos virar<br>o <em>jogo</em> juntos.</h2>
+    <p class="cta-sub">Naipe Blue está pronto para escalar.<br>Entre em contato e faça parte desta jogada.</p>
+    <div class="cta-contacts">
+        <div class="contact-item">
+            <span class="contact-label">E-mail</span>
+            <span class="contact-val">contato@naipeblue.com.br</span>
+        </div>
+        <div class="contact-item">
+            <span class="contact-label">WhatsApp</span>
+            <span class="contact-val">(85) 9 0000-0000</span>
+        </div>
+        <div class="contact-item">
+            <span class="contact-label">Site</span>
+            <span class="contact-val">naipeblue.com.br</span>
+        </div>
+    </div>
+    <div class="slide-num">09 / 09</div>
+</section>
+
+<script>
+    // highlight nav dot on scroll
+    const dots = document.querySelectorAll('.prog-dot');
+    const sections = document.querySelectorAll('section.slide');
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if(e.isIntersecting){
+                const id = e.target.id;
+                dots.forEach(d => d.classList.remove('active'));
+                const dot = document.querySelector(`.prog-dot[href="#${id}"]`);
+                if(dot) dot.classList.add('active');
+            }
+        });
+    }, { threshold: 0.5 });
+    sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
