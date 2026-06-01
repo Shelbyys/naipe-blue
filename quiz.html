@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naipe Azul — Quiz de Aptidão</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+        :root {
+            --navy:    #080F1E;
+            --blue-dk: #0D1F3C;
+            --blue-md: #1A3560;
+            --blue-el: #1E90FF;
+            --blue-viv:#0070E0;
+            --gold:    #C9A84C;
+            --gold-lt: #E8C97A;
+            --green:   #22C55E;
+            --red:     #EF4444;
+            --white:   #FFFFFF;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior:smooth; }
+
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:var(--navy); }
+        ::-webkit-scrollbar-thumb { background:var(--gold); border-radius:3px; }
+
+        body {
+            font-family:'Inter', system-ui, sans-serif;
+            background:var(--navy);
+            color:var(--white);
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+        }
+
+        /* ── HEADER ── */
+        header {
+            padding:20px 40px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            border-bottom:1px solid rgba(255,255,255,.07);
+        }
+        .header-logo img {
+            height:38px; width:auto;
+            mix-blend-mode:lighten;
+        }
+        .header-label {
+            font-size:12px; font-weight:700;
+            letter-spacing:2px; text-transform:uppercase;
+            color:rgba(255,255,255,.3);
+        }
+        .header-steps {
+            font-size:13px; font-weight:700;
+            color:var(--gold);
+        }
+
+        /* ── PROGRESS ── */
+        .progress-bar-wrap {
+            height:3px;
+            background:rgba(255,255,255,.07);
+            position:relative;
+        }
+        .progress-bar-fill {
+            height:100%;
+            background:linear-gradient(90deg, var(--blue-el), var(--gold));
+            transition:width .5s cubic-bezier(.4,0,.2,1);
+            border-radius:0 2px 2px 0;
+            position:relative;
+        }
+        .progress-bar-fill::after {
+            content:'';
+            position:absolute; right:0; top:50%;
+            transform:translateY(-50%);
+            width:8px; height:8px; border-radius:50%;
+            background:var(--gold);
+            box-shadow:0 0 10px var(--gold);
+        }
+
+        /* ── MAIN ── */
+        main {
+            flex:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:40px 20px;
+        }
+
+        .quiz-container {
+            width:100%;
+            max-width:640px;
+        }
+
+        /* ── QUESTION SLIDE ── */
+        .question-slide {
+            display:none;
+            animation:slideIn .4s cubic-bezier(.4,0,.2,1);
+        }
+        .question-slide.active { display:block; }
+        .question-slide.exit   { animation:slideOut .3s cubic-bezier(.4,0,.2,1) forwards; }
+
+        @keyframes slideIn {
+            from { opacity:0; transform:translateX(40px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+        @keyframes slideOut {
+            from { opacity:1; transform:translateX(0); }
+            to   { opacity:0; transform:translateX(-40px); }
+        }
+
+        .q-number {
+            font-size:13px; font-weight:700;
+            letter-spacing:2px; text-transform:uppercase;
+            color:var(--blue-el); margin-bottom:16px;
+        }
+
+        .q-text {
+            font-size:28px; font-weight:900;
+            line-height:1.2; letter-spacing:-.5px;
+            color:var(--white); margin-bottom:8px;
+        }
+
+        .q-sub {
+            font-size:15px; color:rgba(255,255,255,.45);
+            margin-bottom:36px; line-height:1.6;
+        }
+
+        /* ── OPTIONS ── */
+        .options { display:flex; flex-direction:column; gap:12px; }
+
+        .option {
+            display:flex; align-items:center; gap:16px;
+            background:rgba(255,255,255,.04);
+            border:1.5px solid rgba(255,255,255,.1);
+            border-radius:14px;
+            padding:18px 22px;
+            cursor:pointer;
+            transition:all .2s ease;
+            position:relative;
+            overflow:hidden;
+        }
+        .option::before {
+            content:'';
+            position:absolute; inset:0;
+            background:linear-gradient(135deg, rgba(30,144,255,.08), transparent);
+            opacity:0; transition:opacity .2s;
+        }
+        .option:hover { border-color:rgba(30,144,255,.4); transform:translateX(4px); }
+        .option:hover::before { opacity:1; }
+
+        .option.selected {
+            border-color:var(--blue-el);
+            background:rgba(30,144,255,.12);
+        }
+        .option.selected .opt-check {
+            background:var(--blue-el);
+            border-color:var(--blue-el);
+        }
+        .option.selected .opt-check::after {
+            opacity:1;
+        }
+
+        .opt-check {
+            width:22px; height:22px; border-radius:50%;
+            border:2px solid rgba(255,255,255,.25);
+            flex-shrink:0;
+            position:relative;
+            transition:all .2s;
+        }
+        .opt-check::after {
+            content:'✓';
+            position:absolute; inset:0;
+            display:flex; align-items:center; justify-content:center;
+            font-size:11px; font-weight:800; color:var(--white);
+            opacity:0; transition:opacity .2s;
+        }
+
+        .opt-icon { font-size:22px; flex-shrink:0; }
+
+        .opt-body { flex:1; }
+        .opt-label { font-size:16px; font-weight:700; color:var(--white); }
+        .opt-desc  { font-size:13px; color:rgba(255,255,255,.4); margin-top:2px; }
+
+        .opt-tag {
+            font-size:11px; font-weight:700; letter-spacing:1px;
+            text-transform:uppercase; padding:3px 10px; border-radius:100px;
+            background:rgba(201,168,76,.15); color:var(--gold);
+            flex-shrink:0;
+        }
+
+        /* ── NAV BUTTONS ── */
+        .q-nav {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-top:36px;
+            gap:12px;
+        }
+
+        .btn-back {
+            background:transparent;
+            border:1.5px solid rgba(255,255,255,.15);
+            color:rgba(255,255,255,.5);
+            padding:14px 24px; border-radius:10px;
+            font-size:14px; font-weight:700;
+            cursor:pointer; transition:all .2s;
+            font-family:inherit;
+        }
+        .btn-back:hover { border-color:rgba(255,255,255,.35); color:var(--white); }
+        .btn-back:disabled { opacity:0; pointer-events:none; }
+
+        .btn-next {
+            background:linear-gradient(135deg, var(--blue-el), var(--blue-viv));
+            color:var(--white);
+            padding:14px 32px; border-radius:10px;
+            font-size:15px; font-weight:800;
+            cursor:pointer; transition:all .25s;
+            border:none; font-family:inherit;
+            display:flex; align-items:center; gap:8px;
+            box-shadow:0 4px 20px rgba(30,144,255,.35);
+            flex:1; justify-content:center;
+            max-width:260px;
+        }
+        .btn-next:hover:not(:disabled) {
+            transform:translateY(-2px);
+            box-shadow:0 8px 30px rgba(30,144,255,.5);
+        }
+        .btn-next:disabled {
+            opacity:.35; cursor:not-allowed; transform:none;
+        }
+
+        /* ── WARNING CARD ── */
+        .warning-card {
+            display:none;
+            background:rgba(239,68,68,.08);
+            border:1px solid rgba(239,68,68,.3);
+            border-radius:12px;
+            padding:16px 20px;
+            margin-top:20px;
+            font-size:14px;
+            color:rgba(255,255,255,.7);
+            line-height:1.6;
+        }
+        .warning-card.visible { display:flex; align-items:flex-start; gap:12px; }
+        .warning-card span { font-size:18px; flex-shrink:0; }
+
+        /* ── RESULTS ── */
+        .result-slide {
+            display:none;
+            text-align:center;
+            animation:slideIn .5s cubic-bezier(.4,0,.2,1);
+        }
+        .result-slide.active { display:block; }
+
+        .result-icon {
+            width:80px; height:80px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:36px; margin:0 auto 28px;
+            animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        .result-icon.apto {
+            background:rgba(34,197,94,.15);
+            border:2px solid rgba(34,197,94,.4);
+        }
+        .result-icon.inapto {
+            background:rgba(239,68,68,.12);
+            border:2px solid rgba(239,68,68,.3);
+        }
+
+        @keyframes popIn {
+            from { transform:scale(0) rotate(-10deg); opacity:0; }
+            to   { transform:scale(1) rotate(0deg);  opacity:1; }
+        }
+
+        .result-tag {
+            font-size:11px; font-weight:700; letter-spacing:3px;
+            text-transform:uppercase; margin-bottom:12px;
+        }
+        .result-tag.apto   { color:var(--green); }
+        .result-tag.inapto { color:var(--red); }
+
+        .result-title {
+            font-size:36px; font-weight:900;
+            letter-spacing:-1px; line-height:1.15;
+            color:var(--white); margin-bottom:16px;
+        }
+
+        .result-text {
+            font-size:16px; color:rgba(255,255,255,.55);
+            line-height:1.75; max-width:480px;
+            margin:0 auto 36px;
+        }
+
+        .result-points {
+            display:flex; flex-direction:column; gap:10px;
+            max-width:420px; margin:0 auto 36px;
+            text-align:left;
+        }
+        .result-point {
+            display:flex; align-items:flex-start; gap:10px;
+            font-size:14px; color:rgba(255,255,255,.65);
+        }
+        .result-point .dot {
+            width:6px; height:6px; border-radius:50%;
+            margin-top:6px; flex-shrink:0;
+        }
+        .dot.green { background:var(--green); }
+        .dot.blue  { background:var(--blue-el); }
+
+        .btn-result-primary {
+            display:inline-flex; align-items:center; gap:10px;
+            background:linear-gradient(135deg, var(--gold), var(--gold-lt));
+            color:var(--navy);
+            padding:18px 40px; border-radius:12px;
+            font-size:17px; font-weight:800;
+            text-decoration:none; transition:all .25s;
+            box-shadow:0 6px 24px rgba(201,168,76,.35);
+            margin-bottom:16px;
+        }
+        .btn-result-primary:hover {
+            transform:translateY(-3px);
+            box-shadow:0 12px 32px rgba(201,168,76,.5);
+        }
+
+        .btn-result-secondary {
+            display:inline-flex; align-items:center; gap:8px;
+            color:rgba(255,255,255,.45);
+            font-size:14px; font-weight:600;
+            text-decoration:none; transition:color .2s;
+            margin-top:8px;
+        }
+        .btn-result-secondary:hover { color:var(--white); }
+
+        .result-disclaimer {
+            font-size:12px; color:rgba(255,255,255,.25);
+            margin-top:32px; line-height:1.6;
+            max-width:400px; margin-left:auto; margin-right:auto;
+        }
+
+        /* ── DECORAÇÃO FUNDO ── */
+        .bg-deco {
+            position:fixed; inset:0; pointer-events:none; z-index:-1;
+            overflow:hidden;
+        }
+        .bg-deco::before {
+            content:'';
+            position:absolute; top:-20%; right:-15%;
+            width:600px; height:600px; border-radius:50%;
+            background:radial-gradient(circle, rgba(30,144,255,.07) 0%, transparent 65%);
+        }
+        .bg-deco::after {
+            content:'';
+            position:absolute; bottom:-10%; left:-10%;
+            width:400px; height:400px; border-radius:50%;
+            background:radial-gradient(circle, rgba(201,168,76,.06) 0%, transparent 65%);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width:600px) {
+            header { padding:16px 20px; }
+            .q-text { font-size:22px; }
+            .option { padding:14px 16px; gap:12px; }
+            .opt-label { font-size:15px; }
+            .btn-next { max-width:100%; }
+            .result-title { font-size:28px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-deco"></div>
+
+<!-- HEADER -->
+<header>
+    <a href="index.html" class="header-logo">
+        <img src="logo.png" alt="Naipe Azul">
+    </a>
+    <span class="header-label">Quiz de aptidão</span>
+    <span class="header-steps" id="stepCounter">1 de 7</span>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressFill" style="width:14%"></div>
+</div>
+
+<!-- MAIN -->
+<main>
+<div class="quiz-container">
+
+    <!-- ═══ Q1: IDADE ═══ -->
+    <div class="question-slide active" data-q="1">
+        <div class="q-number">Pergunta 01 / 07</div>
+        <h2 class="q-text">Qual é a sua idade?</h2>
+        <p class="q-sub">O tratamento é indicado para maiores de 18 anos.</p>
+        <div class="options">
+            <div class="option" data-value="18-30" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟢</span>
+                <div class="opt-body">
+                    <div class="opt-label">18 a 30 anos</div>
+                </div>
+            </div>
+            <div class="option" data-value="31-45" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟢</span>
+                <div class="opt-body">
+                    <div class="opt-label">31 a 45 anos</div>
+                </div>
+            </div>
+            <div class="option" data-value="46-60" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟢</span>
+                <div class="opt-body">
+                    <div class="opt-label">46 a 60 anos</div>
+                </div>
+            </div>
+            <div class="option" data-value="60+" data-score="1">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟡</span>
+                <div class="opt-body">
+                    <div class="opt-label">Acima de 60 anos</div>
+                    <div class="opt-desc">Avaliação médica recomendada</div>
+                </div>
+            </div>
+            <div class="option" data-value="menor18" data-score="99" data-block="true">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🔴</span>
+                <div class="opt-body">
+                    <div class="opt-label">Menos de 18 anos</div>
+                </div>
+            </div>
+        </div>
+        <div class="warning-card" id="warn1">
+            <span>⚠️</span>
+            <span>O tratamento é exclusivo para maiores de 18 anos. Não podemos prosseguir com o cadastro.</span>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back" disabled>← Voltar</button>
+            <button class="btn-next" disabled id="next1">Próxima →</button>
+        </div>
+    </div>
+
+    <!-- ═══ Q2: SAÚDE CARDÍACA ═══ -->
+    <div class="question-slide" data-q="2">
+        <div class="q-number">Pergunta 02 / 07</div>
+        <h2 class="q-text">Você tem alguma condição cardíaca?</h2>
+        <p class="q-sub">Infarto, arritmia, insuficiência cardíaca ou similar.</p>
+        <div class="options">
+            <div class="option" data-value="nao" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">💚</span>
+                <div class="opt-body">
+                    <div class="opt-label">Não tenho nenhuma condição cardíaca</div>
+                </div>
+            </div>
+            <div class="option" data-value="leve" data-score="1">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟡</span>
+                <div class="opt-body">
+                    <div class="opt-label">Tenho histórico leve ou controlado</div>
+                    <div class="opt-desc">Arritmia controlada, hipertensão leve com medicação</div>
+                </div>
+            </div>
+            <div class="option" data-value="sim" data-score="99" data-block="true">
+                <span class="opt-check"></span>
+                <span class="opt-icon">❤️</span>
+                <div class="opt-body">
+                    <div class="opt-label">Sim, tenho condição cardíaca ativa</div>
+                    <div class="opt-desc">Infarto recente, insuficiência cardíaca, angina instável</div>
+                </div>
+                <span class="opt-tag">Atenção</span>
+            </div>
+        </div>
+        <div class="warning-card" id="warn2">
+            <span>⚠️</span>
+            <span>Condições cardíacas ativas podem ser contraindicadas. Recomendamos fortemente consultar seu cardiologista antes de qualquer suplementação.</span>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back">← Voltar</button>
+            <button class="btn-next" disabled>Próxima →</button>
+        </div>
+    </div>
+
+    <!-- ═══ Q3: MEDICAMENTOS ═══ -->
+    <div class="question-slide" data-q="3">
+        <div class="q-number">Pergunta 03 / 07</div>
+        <h2 class="q-text">Você usa algum desses medicamentos?</h2>
+        <p class="q-sub">Selecione a opção que melhor descreve sua situação atual.</p>
+        <div class="options">
+            <div class="option" data-value="nenhum" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">✅</span>
+                <div class="opt-body">
+                    <div class="opt-label">Não uso nenhum medicamento contínuo</div>
+                </div>
+            </div>
+            <div class="option" data-value="outros" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">💊</span>
+                <div class="opt-body">
+                    <div class="opt-label">Uso medicamentos, mas não os listados abaixo</div>
+                    <div class="opt-desc">Vitaminas, suplementos, anti-inflamatórios pontuais</div>
+                </div>
+            </div>
+            <div class="option" data-value="antihiper" data-score="1">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟡</span>
+                <div class="opt-body">
+                    <div class="opt-label">Anti-hipertensivos ou betabloqueadores</div>
+                    <div class="opt-desc">Losartana, atenolol, captopril, etc.</div>
+                </div>
+            </div>
+            <div class="option" data-value="nitratos" data-score="99" data-block="true">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🔴</span>
+                <div class="opt-body">
+                    <div class="opt-label">Nitratos ou medicamentos para angina</div>
+                    <div class="opt-desc">Nitrato de isossorbida, nitroglicerina, amil nitrito</div>
+                </div>
+                <span class="opt-tag">Contraindicado</span>
+            </div>
+        </div>
+        <div class="warning-card" id="warn3">
+            <span>⚠️</span>
+            <span>O uso concomitante com nitratos pode causar queda grave de pressão. Esta combinação é contraindicada. Consulte seu médico.</span>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back">← Voltar</button>
+            <button class="btn-next" disabled>Próxima →</button>
+        </div>
+    </div>
+
+    <!-- ═══ Q4: PRESSÃO ARTERIAL ═══ -->
+    <div class="question-slide" data-q="4">
+        <div class="q-number">Pergunta 04 / 07</div>
+        <h2 class="q-text">Como está sua pressão arterial?</h2>
+        <p class="q-sub">Considere sua última medição ou diagnóstico médico.</p>
+        <div class="options">
+            <div class="option" data-value="normal" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">💚</span>
+                <div class="opt-body">
+                    <div class="opt-label">Normal / Nunca tive diagnóstico</div>
+                    <div class="opt-desc">Abaixo de 140/90 mmHg</div>
+                </div>
+            </div>
+            <div class="option" data-value="controlada" data-score="1">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🟡</span>
+                <div class="opt-body">
+                    <div class="opt-label">Tenho pressão alta mas está controlada</div>
+                    <div class="opt-desc">Com medicação e acompanhamento médico</div>
+                </div>
+            </div>
+            <div class="option" data-value="alta" data-score="2">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🔴</span>
+                <div class="opt-body">
+                    <div class="opt-label">Pressão alta não controlada</div>
+                    <div class="opt-desc">Sem medicação ou difícil de controlar</div>
+                </div>
+            </div>
+            <div class="option" data-value="baixa" data-score="1">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🔵</span>
+                <div class="opt-body">
+                    <div class="opt-label">Pressão baixa ou hipotensão</div>
+                </div>
+            </div>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back">← Voltar</button>
+            <button class="btn-next" disabled>Próxima →</button>
+        </div>
+    </div>
+
+    <!-- ═══ Q5: SAÚDE GERAL ═══ -->
+    <div class="question-slide" data-q="5">
+        <div class="q-number">Pergunta 05 / 07</div>
+        <h2 class="q-text">Como você avalia sua saúde geral?</h2>
+        <p class="q-sub">Seja honesto — isso ajuda a personalizar seu protocolo.</p>
+        <div class="options">
+            <div class="option" data-value="otima" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">💪</span>
+                <div class="opt-body">
+                    <div class="opt-label">Ótima</div>
+                    <div class="opt-desc">Me exercito, durmo bem, sem condições crônicas</div>
+                </div>
+            </div>
+            <div class="option" data-value="boa" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">😊</span>
+                <div class="opt-body">
+                    <div class="opt-label">Boa</div>
+                    <div class="opt-desc">Levo uma vida normal, sem grandes problemas</div>
+                </div>
+            </div>
+            <div class="option" data-value="regular" data-score="1">
+                <span class="opt-check"></span>
+                <span class="opt-icon">😐</span>
+                <div class="opt-body">
+                    <div class="opt-label">Regular</div>
+                    <div class="opt-desc">Tenho algumas condições, estilo de vida sedentário</div>
+                </div>
+            </div>
+            <div class="option" data-value="ruim" data-score="2">
+                <span class="opt-check"></span>
+                <span class="opt-icon">😔</span>
+                <div class="opt-body">
+                    <div class="opt-label">Tenho condições de saúde importantes</div>
+                    <div class="opt-desc">Diabetes, obesidade, doenças autoimunes, entre outras</div>
+                </div>
+            </div>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back">← Voltar</button>
+            <button class="btn-next" disabled>Próxima →</button>
+        </div>
+    </div>
+
+    <!-- ═══ Q6: OBJETIVO ═══ -->
+    <div class="question-slide" data-q="6">
+        <div class="q-number">Pergunta 06 / 07</div>
+        <h2 class="q-text">Qual é o seu principal objetivo?</h2>
+        <p class="q-sub">Isso define qual protocolo será indicado para você.</p>
+        <div class="options">
+            <div class="option" data-value="duracao" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">⏱</span>
+                <div class="opt-body">
+                    <div class="opt-label">Mais duração</div>
+                    <div class="opt-desc">Quero durar mais antes do ápice</div>
+                </div>
+            </div>
+            <div class="option" data-value="desempenho" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">⚡</span>
+                <div class="opt-body">
+                    <div class="opt-label">Mais desempenho e firmeza</div>
+                    <div class="opt-desc">Ereção mais forte e sustentada</div>
+                </div>
+            </div>
+            <div class="option" data-value="confianca" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🎯</span>
+                <div class="opt-body">
+                    <div class="opt-label">Mais confiança</div>
+                    <div class="opt-desc">Superar ansiedade de desempenho</div>
+                </div>
+            </div>
+            <div class="option" data-value="tudo" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">👑</span>
+                <div class="opt-body">
+                    <div class="opt-label">Quero tudo acima</div>
+                    <div class="opt-desc">Protocolo completo de performance</div>
+                </div>
+                <span class="opt-tag">Popular</span>
+            </div>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back">← Voltar</button>
+            <button class="btn-next" disabled>Próxima →</button>
+        </div>
+    </div>
+
+    <!-- ═══ Q7: EXPERIÊNCIA ═══ -->
+    <div class="question-slide" data-q="7">
+        <div class="q-number">Pergunta 07 / 07</div>
+        <h2 class="q-text">Você já usou algum produto para performance masculina?</h2>
+        <p class="q-sub">Isso ajuda o médico a calibrar sua fórmula com mais precisão.</p>
+        <div class="options">
+            <div class="option" data-value="sim-resultado" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">✅</span>
+                <div class="opt-body">
+                    <div class="opt-label">Sim, e tive bons resultados</div>
+                    <div class="opt-desc">Já usei e funcionou bem</div>
+                </div>
+            </div>
+            <div class="option" data-value="sim-sem-resultado" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🔄</span>
+                <div class="opt-body">
+                    <div class="opt-label">Sim, mas não tive resultado satisfatório</div>
+                    <div class="opt-desc">Usei mas não fez efeito como esperado</div>
+                </div>
+            </div>
+            <div class="option" data-value="nao" data-score="0">
+                <span class="opt-check"></span>
+                <span class="opt-icon">🆕</span>
+                <div class="opt-body">
+                    <div class="opt-label">Não, é minha primeira vez</div>
+                    <div class="opt-desc">Nunca usei nenhum produto do tipo</div>
+                </div>
+            </div>
+        </div>
+        <div class="q-nav">
+            <button class="btn-back">← Voltar</button>
+            <button class="btn-next btn-finish" disabled>Ver resultado →</button>
+        </div>
+    </div>
+
+    <!-- ═══ RESULTADO: APTO ═══ -->
+    <div class="result-slide" id="result-apto">
+        <div class="result-icon apto">✓</div>
+        <div class="result-tag apto">♦ Você está apto</div>
+        <h2 class="result-title">Ótima notícia!<br>Podemos continuar.</h2>
+        <p class="result-text">Com base nas suas respostas, você está <strong style="color:#22C55E">apto para iniciar o tratamento</strong> Naipe Azul. Nosso médico especialista vai analisar seu perfil e montar uma fórmula exclusiva para você.</p>
+
+        <div class="result-points">
+            <div class="result-point">
+                <span class="dot green"></span>
+                Sem contraindicações identificadas nas suas respostas
+            </div>
+            <div class="result-point">
+                <span class="dot blue"></span>
+                Próximo passo: consulta rápida com o médico especialista
+            </div>
+            <div class="result-point">
+                <span class="dot blue"></span>
+                Sua fórmula será personalizada com base no seu perfil
+            </div>
+        </div>
+
+        <a href="#" class="btn-result-primary">🎯 &nbsp;Iniciar meu tratamento agora</a>
+        <br>
+        <a href="index.html" class="btn-result-secondary">← Voltar ao site</a>
+
+        <p class="result-disclaimer">As respostas do quiz não substituem avaliação médica completa. Nosso médico parceiro fará a análise final antes de emitir a prescrição.</p>
+    </div>
+
+    <!-- ═══ RESULTADO: NÃO INDICADO ═══ -->
+    <div class="result-slide" id="result-inapto">
+        <div class="result-icon inapto">⚠</div>
+        <div class="result-tag inapto">Atenção necessária</div>
+        <h2 class="result-title">Recomendamos<br>consultar um médico.</h2>
+        <p class="result-text">Com base em uma ou mais respostas, identificamos <strong style="color:#EF4444">fatores de atenção</strong> que precisam ser avaliados por um profissional de saúde antes de iniciar qualquer tratamento.</p>
+
+        <div class="result-points">
+            <div class="result-point">
+                <span class="dot" style="background:var(--red)"></span>
+                Identificamos uma possível contraindicação nas suas respostas
+            </div>
+            <div class="result-point">
+                <span class="dot blue"></span>
+                Nosso médico pode te orientar com segurança
+            </div>
+            <div class="result-point">
+                <span class="dot blue"></span>
+                Sua saúde é nossa prioridade acima de tudo
+            </div>
+        </div>
+
+        <a href="https://wa.me/5500000000000?text=Olá,%20fiz%20o%20quiz%20Naipe%20Azul%20e%20gostaria%20de%20falar%20com%20um%20médico." class="btn-result-primary" style="background:linear-gradient(135deg,#22C55E,#16A34A); box-shadow:0 6px 24px rgba(34,197,94,.35)">
+            💬 &nbsp;Falar com um especialista
+        </a>
+        <br>
+        <a href="index.html" class="btn-result-secondary">← Voltar ao site</a>
+
+        <p class="result-disclaimer">Esta avaliação é apenas informativa. Procure um médico para uma avaliação completa e segura.</p>
+    </div>
+
+</div>
+</main>
+
+<script>
+(function () {
+
+    const TOTAL = 7;
+    let current = 1;
+    let blocked  = false;  // contraindicação absoluta
+    let score    = 0;      // score acumulado
+
+    const slides   = document.querySelectorAll('.question-slide');
+    const counter  = document.getElementById('stepCounter');
+    const progress = document.getElementById('progressFill');
+
+    function getSlide(n) {
+        return document.querySelector(`.question-slide[data-q="${n}"]`);
+    }
+
+    function updateProgress(n) {
+        const pct = Math.round((n / TOTAL) * 100);
+        progress.style.width = pct + '%';
+        counter.textContent  = n + ' de ' + TOTAL;
+    }
+
+    function goTo(n) {
+        const cur = getSlide(current);
+        cur.classList.add('exit');
+        setTimeout(() => {
+            cur.classList.remove('active', 'exit');
+            current = n;
+            const next = getSlide(current);
+            next.classList.add('active');
+            updateProgress(current);
+        }, 280);
+    }
+
+    function showResult(type) {
+        const cur = getSlide(current);
+        cur.classList.add('exit');
+        setTimeout(() => {
+            cur.classList.remove('active', 'exit');
+            document.getElementById('result-' + type).classList.add('active');
+            progress.style.width = '100%';
+            counter.textContent  = '✓ Concluído';
+        }, 280);
+    }
+
+    // Delegação de eventos para opções
+    document.querySelectorAll('.question-slide').forEach(slide => {
+
+        const q        = parseInt(slide.dataset.q);
+        const opts     = slide.querySelectorAll('.option');
+        const nextBtn  = slide.querySelector('.btn-next');
+        const backBtn  = slide.querySelector('.btn-back');
+        const warnEl   = slide.querySelector('.warning-card');
+
+        opts.forEach(opt => {
+            opt.addEventListener('click', () => {
+                // Deselect all
+                opts.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                const isBlock = opt.dataset.block === 'true';
+                const val     = opt.dataset.value;
+
+                // Mostrar/ocultar warning
+                if (warnEl) {
+                    warnEl.classList.toggle('visible', isBlock);
+                }
+
+                // Habilitar/bloquear botão
+                if (isBlock) {
+                    nextBtn.textContent = q === 1 ? 'Não posso prosseguir' : 'Ver resultado';
+                    nextBtn.disabled = false;
+                    nextBtn.style.background = 'linear-gradient(135deg,#EF4444,#DC2626)';
+                    nextBtn.style.boxShadow  = '0 4px 20px rgba(239,68,68,.35)';
+                } else {
+                    nextBtn.textContent = q === TOTAL ? 'Ver resultado →' : 'Próxima →';
+                    nextBtn.disabled = false;
+                    nextBtn.style.background = '';
+                    nextBtn.style.boxShadow  = '';
+                }
+
+                // Guardar score para avaliação final
+                slide.dataset.selected = val;
+                slide.dataset.selectedScore = opt.dataset.score;
+                slide.dataset.isBlock  = isBlock;
+            });
+        });
+
+        // Botão PRÓXIMA
+        nextBtn.addEventListener('click', () => {
+            const isBlk = slide.dataset.isBlock === 'true';
+            if (isBlk) {
+                // Contraindicação absoluta → resultado negativo
+                showResult('inapto');
+                return;
+            }
+
+            score += parseInt(slide.dataset.selectedScore || 0);
+
+            if (q < TOTAL) {
+                goTo(q + 1);
+            } else {
+                // Calcular resultado final
+                // score >= 5 = cuidado, mas só bloco absoluto define inapto aqui
+                showResult('apto');
+            }
+        });
+
+        // Botão VOLTAR
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                if (current > 1) goTo(current - 1);
+            });
+        }
+    });
+
+    // Inicializa
+    updateProgress(1);
+
+})();
+</script>
+</body>
+</html>
