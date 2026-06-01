@@ -866,6 +866,51 @@
             .parallax-bg { inset: -10%; }
         }
 
+        /* ── ESPECIFICAÇÕES ── */
+        .specs-section { padding: 100px 60px; background: var(--navy); }
+        .specs-header  { text-align: center; margin-bottom: 60px; }
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+        .spec-card {
+            border-radius: 20px;
+            padding: 32px;
+            min-height: 430px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sc-warm  { background: linear-gradient(155deg,#cbbfa0 0%,#a89060 55%,#8c7248 100%); }
+        .sc-dark  { background: linear-gradient(155deg,#0c2535 0%,#183e52 50%,#0d2d40 100%); }
+        .sc-light { background: linear-gradient(155deg,#38b8cc 0%,#64d0e4 55%,#48c4d8 100%); }
+        .sc-num {
+            font-size: 12px; font-weight: 700;
+            color: rgba(255,255,255,.5);
+            letter-spacing: 2px;
+            display: block; margin-bottom: 8px;
+        }
+        .sc-title { font-size: 26px; font-weight: 400; color: #fff; line-height: 1.3; margin: 0; }
+        .sc-title strong { font-weight: 800; }
+        .sc-visual {
+            flex: 1;
+            display: flex; align-items: center; justify-content: center;
+            padding: 12px 0;
+        }
+        .sc-visual svg {
+            width: 100%; max-width: 210px; height: auto;
+            filter: drop-shadow(0 10px 28px rgba(0,0,0,.22));
+        }
+        .sc-desc { font-size: 15px; color: rgba(255,255,255,.75); line-height: 1.65; margin: 0; }
+        @media (max-width: 900px) {
+            .specs-section { padding: 70px 24px; }
+            .specs-grid { grid-template-columns: 1fr; gap: 16px; }
+            .spec-card { min-height: 320px; }
+        }
+
     </style>
 </head>
 <body>
@@ -1006,6 +1051,88 @@
                 <a href="quiz.html" class="gallery-overlay-btn">Começar agora →</a>
             </div>
         </div>
+    </div>
+</section>
+
+<!-- ═══ ESPECIFICAÇÕES ═══ -->
+<section class="specs-section" id="especificacoes">
+    <div class="specs-header">
+        <div class="tag reveal">Tecnologia</div>
+        <h2 class="title reveal">O que faz a <em>diferença.</em></h2>
+    </div>
+    <div class="specs-grid">
+
+        <!-- 01 Absorção Sublingual -->
+        <div class="spec-card sc-warm reveal" style="transition-delay:.05s">
+            <span class="sc-num">01.</span>
+            <h3 class="sc-title">Absorção<br><strong>Sublingual</strong></h3>
+            <div class="sc-visual">
+                <svg viewBox="0 0 220 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="sA" cx="35%" cy="28%" r="65%"><stop offset="0%" stop-color="#a8eee8"/><stop offset="100%" stop-color="#28a8a4"/></radialGradient>
+                        <radialGradient id="sB" cx="35%" cy="28%" r="65%"><stop offset="0%" stop-color="#baf2ee"/><stop offset="100%" stop-color="#38b8b4"/></radialGradient>
+                        <radialGradient id="sW" cx="35%" cy="28%" r="65%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#c8e8e4"/></radialGradient>
+                    </defs>
+                    <line x1="110" y1="100" x2="157" y2="63"  stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <line x1="110" y1="100" x2="66"  y2="70"  stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <line x1="110" y1="100" x2="70"  y2="142" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <line x1="110" y1="100" x2="160" y2="140" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <circle cx="110" cy="100" r="40" fill="url(#sA)"/>
+                    <circle cx="157" cy="63"  r="24" fill="url(#sB)"/>
+                    <circle cx="66"  cy="70"  r="19" fill="url(#sB)"/>
+                    <circle cx="70"  cy="142" r="15" fill="url(#sA)"/>
+                    <circle cx="160" cy="140" r="13" fill="url(#sB)"/>
+                    <circle cx="186" cy="86"  r="9"  fill="url(#sW)"/>
+                    <circle cx="40"  cy="112" r="7"  fill="url(#sW)"/>
+                    <circle cx="97"  cy="86"  r="10" fill="rgba(255,255,255,.28)"/>
+                </svg>
+            </div>
+            <p class="sc-desc">Ignora o sistema digestivo. Entra direto na corrente sanguínea.</p>
+        </div>
+
+        <!-- 02 Dose de Precisão -->
+        <div class="spec-card sc-dark reveal" style="transition-delay:.15s">
+            <span class="sc-num">02.</span>
+            <h3 class="sc-title">Dose de<br><strong>Precisão</strong></h3>
+            <div class="sc-visual">
+                <svg viewBox="0 0 220 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="hA" cx="32%" cy="28%" r="70%"><stop offset="0%" stop-color="#72d8e8"/><stop offset="100%" stop-color="#2898b0"/></radialGradient>
+                        <radialGradient id="hB" cx="32%" cy="28%" r="70%"><stop offset="0%" stop-color="#58c8d8"/><stop offset="100%" stop-color="#1878a0"/></radialGradient>
+                    </defs>
+                    <circle cx="90"  cy="116" r="54" stroke="rgba(80,190,210,.2)"  stroke-width="1.5"/>
+                    <circle cx="90"  cy="116" r="74" stroke="rgba(80,190,210,.1)"  stroke-width="1"/>
+                    <circle cx="146" cy="78"  r="44" stroke="rgba(80,190,210,.15)" stroke-width="1.5"/>
+                    <polygon points="90,68 127,90 127,134 90,156 53,134 53,90"   fill="url(#hA)" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+                    <polygon points="90,82 117,98 117,130 90,146 63,130 63,98"   fill="none"      stroke="rgba(255,255,255,.14)" stroke-width="8"/>
+                    <polygon points="146,36 175,53 175,88 146,105 117,88 117,53" fill="url(#hB)" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+                    <polygon points="146,50 167,62 167,86 146,98 125,86 125,62"  fill="none"      stroke="rgba(255,255,255,.1)"  stroke-width="7"/>
+                    <circle cx="78"  cy="82" r="8" fill="rgba(255,255,255,.22)"/>
+                    <circle cx="134" cy="48" r="6" fill="rgba(255,255,255,.2)"/>
+                </svg>
+            </div>
+            <p class="sc-desc">Fórmulas ajustadas por médicos para o seu perfil específico.</p>
+        </div>
+
+        <!-- 03 Sabor e Discrição -->
+        <div class="spec-card sc-light reveal" style="transition-delay:.25s">
+            <span class="sc-num">03.</span>
+            <h3 class="sc-title">Sabor e<br><strong>Discrição</strong></h3>
+            <div class="sc-visual">
+                <svg viewBox="0 0 220 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="hS" cx="32%" cy="28%" r="70%"><stop offset="0%" stop-color="#84e4f4"/><stop offset="100%" stop-color="#3ab0cc"/></radialGradient>
+                    </defs>
+                    <path d="M10 160 Q55 110 110 138 Q165 166 210 118" stroke="rgba(255,255,255,.18)" stroke-width="2" fill="none"/>
+                    <path d="M-10 178 Q45 138 100 158 Q158 180 225 148" stroke="rgba(255,255,255,.1)" stroke-width="1.5" fill="none"/>
+                    <polygon points="110,28 167,60 167,126 110,158 53,126 53,60" fill="url(#hS)" stroke="rgba(255,255,255,.24)" stroke-width="2.5"/>
+                    <polygon points="110,46 151,68 151,114 110,136 69,114 69,68" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="9"/>
+                    <ellipse cx="88" cy="58" rx="17" ry="11" fill="rgba(255,255,255,.26)" transform="rotate(-22 88 58)"/>
+                </svg>
+            </div>
+            <p class="sc-desc">Sem necessidade de água. Sem cara de "remédio".</p>
+        </div>
+
     </div>
 </section>
 
