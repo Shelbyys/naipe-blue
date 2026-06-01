@@ -798,11 +798,15 @@
         .parallax-bg {
             position: absolute;
             inset: -20%;
-            background-image: url('img-poker.png');
-            background-size: cover;
-            background-position: center;
             will-change: transform;
             transition: transform 0s linear;
+        }
+        .parallax-bg video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
         }
         .parallax-overlay {
             position: absolute; inset: 0;
@@ -1006,7 +1010,11 @@
 
 <!-- ═══ PARALLAX BANNER ═══ -->
 <div class="parallax-banner" id="parallax-banner">
-    <div class="parallax-bg" id="parallax-bg"></div>
+    <div class="parallax-bg" id="parallax-bg">
+        <video autoplay muted loop playsinline preload="auto">
+            <source src="video-bg.mp4" type="video/mp4">
+        </video>
+    </div>
     <div class="parallax-overlay"></div>
     <div class="parallax-content">
         <span class="parallax-suit">♠ ♥ ♦ ♣</span>
