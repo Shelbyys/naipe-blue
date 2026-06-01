@@ -866,35 +866,9 @@
             .parallax-bg { inset: -10%; }
         }
 
-        /* ── PASTILHA GIRANDO ── */
-        #pill-spin-wrap {
-            position: fixed;
-            right: 6vw;
-            top: 50%;
-            width: clamp(140px, 14vw, 220px);
-            aspect-ratio: 1;
-            z-index: 15;
-            pointer-events: none;
-            will-change: transform, opacity, filter;
-            transform-origin: center center;
-        }
-        #pill-spin-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-        }
-        @media (max-width: 700px) {
-            #pill-spin-wrap { right: 2vw; width: 90px; }
-        }
     </style>
 </head>
 <body>
-
-<!-- Pastilha com parallax giratório (do início até metade da página) -->
-<div id="pill-spin-wrap">
-    <img src="img-pill-spin.png" alt="" aria-hidden="true">
-</div>
 
 <!-- Cursor personalizado -->
 
@@ -1412,45 +1386,6 @@
         ].join(';');
         container.appendChild(p);
     }
-})();
-
-/* ── PASTILHA GIRANDO (scroll 0 → 50%) ── */
-(function () {
-    const wrap = document.getElementById('pill-spin-wrap');
-    if (!wrap) return;
-
-    function update() {
-        const scrolled  = window.scrollY;
-        const maxScroll = document.body.scrollHeight - window.innerHeight;
-        const p         = scrolled / maxScroll;           // 0 → 1 página inteira
-        const half      = Math.min(p / 0.5, 1);          // 0 → 1 na primeira metade
-
-        // Fade: entra suave nos primeiros 5%, sai nos últimos 8% da primeira metade
-        let opacity;
-        if (p < 0.05)       opacity = p / 0.05;
-        else if (p > 0.42)  opacity = Math.max(0, 1 - (p - 0.42) / 0.08);
-        else                opacity = 1;
-
-        // Rotação: 0 → 540° ao longo da primeira metade
-        const rotate = half * 540;
-
-        // Deriva vertical: começa 40px acima do centro, chega no centro
-        const drift = (1 - half) * -40;
-
-        // Escala: começa pequena, cresce até 1
-        const scale = 0.55 + half * 0.45;
-
-        // Glow azul que cresce com o progresso
-        const glow   = (half * 36).toFixed(1);
-        const spread = (half * 16).toFixed(1);
-
-        wrap.style.opacity   = opacity;
-        wrap.style.transform = `translateY(calc(-50% + ${drift}px)) rotate(${rotate}deg) scale(${scale})`;
-        wrap.style.filter    = `drop-shadow(0 0 ${glow}px rgba(30,144,255,.75)) drop-shadow(0 0 ${spread}px rgba(96,192,255,.4))`;
-    }
-
-    window.addEventListener('scroll', update, { passive: true });
-    update();
 })();
 
 /* ── INTERSECTION OBSERVER (reveal) ── */
