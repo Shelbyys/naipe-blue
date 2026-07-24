@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naipe Azul — Consulta Online</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+        :root {
+            --navy:    #080F1E;
+            --blue-dk: #0D1F3C;
+            --blue-md: #1A3560;
+            --blue-el: #1E90FF;
+            --blue-viv:#0070E0;
+            --gold:    #C9A84C;
+            --gold-lt: #E8C97A;
+            --green:   #22C55E;
+            --red:     #EF4444;
+            --white:   #FFFFFF;
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior:smooth; }
+
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:var(--navy); }
+        ::-webkit-scrollbar-thumb { background:var(--gold); border-radius:3px; }
+
+        body {
+            font-family:'Inter', system-ui, sans-serif;
+            background:var(--navy);
+            color:var(--white);
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+            /* a animação de entrada desloca o slide 40px — não vira scroll lateral */
+            overflow-x:hidden;
+        }
+
+        /* ── HEADER ── */
+        header {
+            padding:20px 40px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            border-bottom:1px solid rgba(255,255,255,.07);
+        }
+        .header-logo img {
+            height:38px; width:auto;
+            mix-blend-mode:lighten;
+        }
+        .header-label {
+            font-size:12px; font-weight:700;
+            letter-spacing:2px; text-transform:uppercase;
+            color:rgba(255,255,255,.3);
+        }
+        .header-steps {
+            font-size:13px; font-weight:700;
+            color:var(--gold);
+        }
+
+        /* ── PROGRESS ── */
+        .progress-bar-wrap {
+            height:3px;
+            background:rgba(255,255,255,.07);
+            position:relative;
+        }
+        .progress-bar-fill {
+            height:100%;
+            background:linear-gradient(90deg, var(--blue-el), var(--gold));
+            transition:width .5s cubic-bezier(.4,0,.2,1);
+            border-radius:0 2px 2px 0;
+            position:relative;
+        }
+        .progress-bar-fill::after {
+            content:'';
+            position:absolute; right:0; top:50%;
+            transform:translateY(-50%);
+            width:8px; height:8px; border-radius:50%;
+            background:var(--gold);
+            box-shadow:0 0 10px var(--gold);
+        }
+
+        /* ── MAIN ── */
+        main {
+            flex:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:40px 20px;
+        }
+
+        .funil-container {
+            width:100%;
+            max-width:640px;
+        }
+
+        /* ── SLIDE ── */
+        .slide {
+            display:none;
+            animation:slideIn .4s cubic-bezier(.4,0,.2,1);
+        }
+        .slide.active { display:block; }
+        .slide.exit   { animation:slideOut .3s cubic-bezier(.4,0,.2,1) forwards; }
+
+        @keyframes slideIn {
+            from { opacity:0; transform:translateX(40px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+        @keyframes slideOut {
+            from { opacity:1; transform:translateX(0); }
+            to   { opacity:0; transform:translateX(-40px); }
+        }
+
+        /* ── PASTILHA 1·2·3 (etapas de abertura) ── */
+        .step-pill {
+            display:inline-flex; align-items:center; gap:6px;
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:100px;
+            padding:6px 10px;
+            margin-bottom:28px;
+        }
+        .step-pill i {
+            width:28px; height:28px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:13px; font-weight:800; font-style:normal;
+            color:rgba(255,255,255,.3);
+            transition:all .3s;
+        }
+        .step-pill i.done {
+            background:rgba(30,144,255,.15);
+            color:var(--blue-el);
+        }
+        .step-pill i.now {
+            background:linear-gradient(135deg, var(--blue-el), var(--blue-viv));
+            color:var(--white);
+            box-shadow:0 3px 12px rgba(30,144,255,.4);
+        }
+
+        /* ── TÍTULOS ── */
+        .q-number {
+            font-size:13px; font-weight:700;
+            letter-spacing:2px; text-transform:uppercase;
+            color:var(--blue-el); margin-bottom:16px;
+        }
+        .q-text {
+            font-size:28px; font-weight:900;
+            line-height:1.2; letter-spacing:-.5px;
+            color:var(--white); margin-bottom:8px;
+        }
+        .q-sub {
+            font-size:15px; color:rgba(255,255,255,.45);
+            margin-bottom:36px; line-height:1.6;
+        }
+        .q-text + .options,
+        .q-text + .card-grid { margin-top:36px; }
+
+        /* ── OPÇÕES ── */
+        .options { display:flex; flex-direction:column; gap:12px; }
+
+        .option {
+            display:flex; align-items:center; gap:16px;
+            background:rgba(255,255,255,.04);
+            border:1.5px solid rgba(255,255,255,.1);
+            border-radius:14px;
+            padding:18px 22px;
+            cursor:pointer;
+            transition:all .2s ease;
+            position:relative;
+            overflow:hidden;
+        }
+        .option::before {
+            content:'';
+            position:absolute; inset:0;
+            background:linear-gradient(135deg, rgba(30,144,255,.08), transparent);
+            opacity:0; transition:opacity .2s;
+        }
+        .option:hover { border-color:rgba(30,144,255,.4); transform:translateX(4px); }
+        .option:hover::before { opacity:1; }
+
+        .option.selected {
+            border-color:var(--blue-el);
+            background:rgba(30,144,255,.12);
+        }
+        .option.selected .opt-check {
+            background:var(--blue-el);
+            border-color:var(--blue-el);
+        }
+        .option.selected .opt-check::after { opacity:1; }
+
+        .opt-check {
+            width:22px; height:22px; border-radius:50%;
+            border:2px solid rgba(255,255,255,.25);
+            flex-shrink:0;
+            position:relative;
+            transition:all .2s;
+        }
+        .opt-check::after {
+            content:'✓';
+            position:absolute; inset:0;
+            display:flex; align-items:center; justify-content:center;
+            font-size:11px; font-weight:800; color:var(--white);
+            opacity:0; transition:opacity .2s;
+        }
+
+        .opt-icon { font-size:22px; flex-shrink:0; }
+        .opt-body { flex:1; }
+        .opt-label { font-size:16px; font-weight:700; color:var(--white); }
+        .opt-desc  { font-size:13px; color:rgba(255,255,255,.4); margin-top:2px; }
+
+        /* ── CARDS DE FAIXA ETÁRIA ── */
+        .card-grid {
+            display:grid;
+            grid-template-columns:repeat(2, 1fr);
+            gap:12px;
+        }
+        .card-opt {
+            background:rgba(255,255,255,.04);
+            border:1.5px solid rgba(255,255,255,.1);
+            border-radius:16px;
+            padding:28px 20px;
+            cursor:pointer;
+            text-align:center;
+            transition:all .2s ease;
+        }
+        .card-opt:hover {
+            border-color:rgba(30,144,255,.4);
+            transform:translateY(-3px);
+        }
+        .card-opt.selected {
+            border-color:var(--blue-el);
+            background:rgba(30,144,255,.12);
+        }
+        .card-suit {
+            font-size:30px;
+            color:var(--gold);
+            margin-bottom:12px;
+            opacity:.85;
+        }
+        .card-age {
+            font-size:22px; font-weight:900;
+            letter-spacing:-.5px;
+        }
+        .card-note {
+            font-size:12px; color:rgba(255,255,255,.35);
+            margin-top:4px;
+        }
+
+        /* ── RÉGUA DE PESO ── */
+        .weight-display {
+            text-align:center;
+            margin-bottom:8px;
+        }
+        .weight-value {
+            font-size:64px; font-weight:900;
+            letter-spacing:-3px; line-height:1;
+            color:var(--white);
+        }
+        .weight-unit {
+            font-size:20px; font-weight:700;
+            color:var(--gold);
+            margin-left:4px;
+        }
+
+        .ruler-wrap { margin:32px 0 12px; }
+        .ruler-ticks {
+            height:26px;
+            background:repeating-linear-gradient(
+                90deg,
+                rgba(255,255,255,.28) 0 1px,
+                transparent 1px 10%
+            );
+            margin-bottom:-26px;
+            pointer-events:none;
+        }
+
+        input[type=range].ruler {
+            -webkit-appearance:none; appearance:none;
+            width:100%; height:26px;
+            background:transparent;
+            cursor:grab;
+        }
+        input[type=range].ruler:active { cursor:grabbing; }
+        input[type=range].ruler::-webkit-slider-runnable-track {
+            height:2px;
+            background:rgba(255,255,255,.12);
+        }
+        input[type=range].ruler::-moz-range-track {
+            height:2px;
+            background:rgba(255,255,255,.12);
+        }
+        input[type=range].ruler::-webkit-slider-thumb {
+            -webkit-appearance:none; appearance:none;
+            width:4px; height:26px;
+            border:none; border-radius:2px;
+            background:var(--gold);
+            box-shadow:0 0 12px rgba(201,168,76,.7);
+            margin-top:-12px;
+        }
+        input[type=range].ruler::-moz-range-thumb {
+            width:4px; height:26px;
+            border:none; border-radius:2px;
+            background:var(--gold);
+            box-shadow:0 0 12px rgba(201,168,76,.7);
+        }
+
+        .ruler-scale {
+            display:flex; justify-content:space-between;
+            font-size:12px; color:rgba(255,255,255,.3);
+            margin-top:6px;
+        }
+        .ruler-hint {
+            text-align:center;
+            font-size:13px; color:rgba(255,255,255,.35);
+            margin-top:18px;
+        }
+
+        /* ── PASSO A PASSO (institucional) ── */
+        .how-list {
+            display:flex; flex-direction:column; gap:12px;
+            margin:32px 0;
+        }
+        .how-item {
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:14px;
+            padding:20px 22px;
+        }
+        .how-title {
+            font-size:16px; font-weight:800;
+            color:var(--gold-lt);
+            margin-bottom:6px;
+        }
+        .how-desc {
+            font-size:14px; color:rgba(255,255,255,.5);
+            line-height:1.6;
+        }
+
+        /* ── LOADING (anel) ── */
+        .load-slide { text-align:center; }
+
+        .ring {
+            width:150px; height:150px;
+            margin:0 auto 32px;
+            position:relative;
+        }
+        .ring svg { transform:rotate(-90deg); }
+        .ring circle {
+            fill:none;
+            stroke-width:6;
+            stroke-linecap:round;
+        }
+        .ring .track { stroke:rgba(255,255,255,.08); }
+        .ring .bar {
+            stroke:var(--blue-el);
+            transition:stroke-dashoffset .3s linear;
+            filter:drop-shadow(0 0 6px rgba(30,144,255,.6));
+        }
+        .ring-label {
+            position:absolute; inset:0;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+        }
+        .ring-pct {
+            font-size:34px; font-weight:900;
+            letter-spacing:-1.5px;
+        }
+        .ring-pct small {
+            font-size:16px; font-weight:700;
+            color:var(--gold);
+        }
+        .ring-caption {
+            font-size:11px; font-weight:700;
+            letter-spacing:1px; text-transform:uppercase;
+            color:rgba(255,255,255,.3);
+            margin-top:4px;
+            max-width:100px; line-height:1.4;
+        }
+
+        .load-headline {
+            font-size:22px; font-weight:800;
+            line-height:1.45;
+            max-width:440px; margin:0 auto 28px;
+            color:rgba(255,255,255,.85);
+        }
+        .load-headline b { color:var(--gold-lt); }
+
+        .load-photo {
+            width:100%; max-width:420px;
+            max-height:220px;
+            object-fit:cover;
+            border-radius:16px;
+            margin:0 auto;
+            display:block;
+            border:1px solid rgba(255,255,255,.08);
+        }
+
+        /* ── SELOS (tela de provas sociais) ── */
+        .seal-row {
+            display:flex; justify-content:center;
+            gap:10px; flex-wrap:wrap;
+            margin-bottom:28px;
+        }
+        .seal {
+            font-size:12px; font-weight:800;
+            letter-spacing:1.5px; text-transform:uppercase;
+            padding:8px 16px; border-radius:100px;
+            background:rgba(201,168,76,.12);
+            border:1px solid rgba(201,168,76,.3);
+            color:var(--gold-lt);
+        }
+
+        .review {
+            display:flex; align-items:flex-start; gap:16px;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:14px;
+            padding:18px 20px;
+            margin-bottom:12px;
+            text-align:left;
+        }
+        .review-suit {
+            font-size:26px; color:var(--gold);
+            flex-shrink:0; opacity:.8;
+        }
+        .review-title {
+            font-size:13px; font-weight:800;
+            letter-spacing:1px; text-transform:uppercase;
+            color:var(--gold-lt);
+            margin-bottom:6px;
+        }
+        .review-quote {
+            font-size:14px; color:rgba(255,255,255,.6);
+            line-height:1.6;
+            font-style:italic;
+        }
+        .review-author {
+            font-size:12px; color:rgba(255,255,255,.35);
+            margin-top:8px;
+        }
+        .review-author b { color:var(--gold); letter-spacing:1px; }
+
+        /* ── CHECKLIST (loading pré-plano) ── */
+        .checklist {
+            max-width:340px;
+            margin:0 auto;
+            text-align:left;
+        }
+        .check-item {
+            display:flex; align-items:center; gap:14px;
+            padding:16px 4px;
+            border-bottom:1px solid rgba(255,255,255,.07);
+            font-size:14px; font-weight:700;
+            color:rgba(255,255,255,.3);
+            transition:color .3s;
+        }
+        .check-item:last-child { border-bottom:none; }
+        .check-item.done { color:var(--white); }
+        .check-mark {
+            width:20px; height:20px; border-radius:50%;
+            border:1.5px solid rgba(255,255,255,.15);
+            display:flex; align-items:center; justify-content:center;
+            font-size:10px; font-weight:800;
+            flex-shrink:0;
+            transition:all .3s;
+        }
+        .check-item.done .check-mark {
+            background:var(--green);
+            border-color:var(--green);
+            color:var(--navy);
+        }
+
+        /* ── NAVEGAÇÃO ── */
+        .q-nav {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-top:36px;
+            gap:12px;
+        }
+        .btn-back {
+            background:transparent;
+            border:1.5px solid rgba(255,255,255,.15);
+            color:rgba(255,255,255,.5);
+            padding:14px 24px; border-radius:10px;
+            font-size:14px; font-weight:700;
+            cursor:pointer; transition:all .2s;
+            font-family:inherit;
+        }
+        .btn-back:hover { border-color:rgba(255,255,255,.35); color:var(--white); }
+        .btn-back:disabled { opacity:0; pointer-events:none; }
+
+        .btn-next {
+            background:linear-gradient(135deg, var(--blue-el), var(--blue-viv));
+            color:var(--white);
+            padding:14px 32px; border-radius:10px;
+            font-size:15px; font-weight:800;
+            cursor:pointer; transition:all .25s;
+            border:none; font-family:inherit;
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            box-shadow:0 4px 20px rgba(30,144,255,.35);
+            flex:1; max-width:260px;
+        }
+        .btn-next:hover:not(:disabled) {
+            transform:translateY(-2px);
+            box-shadow:0 8px 30px rgba(30,144,255,.5);
+        }
+        .btn-next:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+
+        .btn-wide {
+            width:100%; max-width:100%;
+            padding:18px 32px;
+            font-size:16px;
+            margin-top:8px;
+        }
+
+        .consent {
+            font-size:12px; color:rgba(255,255,255,.28);
+            line-height:1.7; margin-top:18px;
+        }
+        .consent a { color:rgba(255,255,255,.5); }
+
+        /* ── TELA DE BLOQUEIO ── */
+        .stop-slide { text-align:center; }
+        .stop-icon {
+            width:80px; height:80px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:34px; margin:0 auto 28px;
+            background:rgba(239,68,68,.12);
+            border:2px solid rgba(239,68,68,.3);
+            animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes popIn {
+            from { transform:scale(0) rotate(-10deg); opacity:0; }
+            to   { transform:scale(1) rotate(0deg);  opacity:1; }
+        }
+        .stop-tag {
+            font-size:11px; font-weight:700; letter-spacing:3px;
+            text-transform:uppercase; color:var(--red);
+            margin-bottom:12px;
+        }
+        .stop-title {
+            font-size:34px; font-weight:900;
+            letter-spacing:-1px; line-height:1.15;
+            margin-bottom:20px;
+        }
+        .stop-card {
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:14px;
+            padding:22px 24px;
+            font-size:15px; color:rgba(255,255,255,.55);
+            line-height:1.75;
+            max-width:480px; margin:0 auto 32px;
+        }
+
+        /* ── TELA FINAL ── */
+        .done-slide { text-align:center; }
+        .done-icon {
+            width:80px; height:80px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:36px; margin:0 auto 28px;
+            background:rgba(34,197,94,.15);
+            border:2px solid rgba(34,197,94,.4);
+            animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        .done-tag {
+            font-size:11px; font-weight:700; letter-spacing:3px;
+            text-transform:uppercase; color:var(--green);
+            margin-bottom:12px;
+        }
+        .done-title {
+            font-size:36px; font-weight:900;
+            letter-spacing:-1px; line-height:1.15;
+            margin-bottom:16px;
+        }
+        .done-text {
+            font-size:16px; color:rgba(255,255,255,.55);
+            line-height:1.75; max-width:480px;
+            margin:0 auto 32px;
+        }
+        .summary {
+            display:flex; flex-direction:column; gap:1px;
+            background:rgba(255,255,255,.07);
+            border-radius:14px;
+            overflow:hidden;
+            max-width:460px; margin:0 auto 32px;
+            text-align:left;
+        }
+        .summary-row {
+            display:flex; justify-content:space-between; align-items:center;
+            gap:16px;
+            background:var(--navy);
+            padding:14px 20px;
+            font-size:14px;
+        }
+        .summary-row span { color:rgba(255,255,255,.4); }
+        .summary-row b { color:var(--white); font-weight:700; text-align:right; }
+
+        .btn-primary {
+            display:inline-flex; align-items:center; gap:10px;
+            background:linear-gradient(135deg, var(--gold), var(--gold-lt));
+            color:var(--navy);
+            padding:18px 40px; border-radius:12px;
+            font-size:17px; font-weight:800;
+            text-decoration:none; transition:all .25s;
+            box-shadow:0 6px 24px rgba(201,168,76,.35);
+            border:none; cursor:pointer; font-family:inherit;
+        }
+        .btn-primary:hover {
+            transform:translateY(-3px);
+            box-shadow:0 12px 32px rgba(201,168,76,.5);
+        }
+        .btn-secondary {
+            display:inline-flex; align-items:center; gap:8px;
+            color:rgba(255,255,255,.45);
+            font-size:14px; font-weight:600;
+            text-decoration:none; transition:color .2s;
+            background:none; border:none; cursor:pointer;
+            font-family:inherit; margin-top:20px;
+        }
+        .btn-secondary:hover { color:var(--white); }
+
+        .disclaimer {
+            font-size:12px; color:rgba(255,255,255,.25);
+            margin-top:32px; line-height:1.6;
+            max-width:420px; margin-left:auto; margin-right:auto;
+        }
+
+        /* ── DECORAÇÃO FUNDO ── */
+        .bg-deco {
+            position:fixed; inset:0; pointer-events:none; z-index:-1;
+            overflow:hidden;
+        }
+        .bg-deco::before {
+            content:'';
+            position:absolute; top:-20%; right:-15%;
+            width:600px; height:600px; border-radius:50%;
+            background:radial-gradient(circle, rgba(30,144,255,.07) 0%, transparent 65%);
+        }
+        .bg-deco::after {
+            content:'';
+            position:absolute; bottom:-10%; left:-10%;
+            width:400px; height:400px; border-radius:50%;
+            background:radial-gradient(circle, rgba(201,168,76,.06) 0%, transparent 65%);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width:600px) {
+            header { padding:16px 20px; }
+            .header-label { display:none; }
+            .q-text { font-size:22px; }
+            .option { padding:14px 16px; gap:12px; }
+            .opt-label { font-size:15px; }
+            .btn-next { max-width:100%; }
+            .card-opt { padding:22px 14px; }
+            .card-age { font-size:19px; }
+            .weight-value { font-size:52px; }
+            .stop-title, .done-title { font-size:27px; }
+            .load-headline { font-size:19px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-deco"></div>
+
+<!-- HEADER -->
+<header>
+    <a href="index.html" class="header-logo">
+        <img src="logo.png" alt="Naipe Azul">
+    </a>
+    <span class="header-label">Consulta online</span>
+    <span class="header-steps" id="stepCounter">Etapa 1</span>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressFill" style="width:6%"></div>
+</div>
+
+<!-- MAIN -->
+<main>
+<div class="funil-container">
+
+    <!-- ═══ E1: OBJETIVO ═══ -->
+    <div class="slide active" data-step="e1" data-label="Objetivo" data-progress="6">
+        <div class="step-pill"><i class="now">1</i><i>2</i><i>3</i></div>
+        <h2 class="q-text">O que você quer melhorar na sua vida sexual?</h2>
+        <div class="options">
+            <div class="option" data-value="Sexo mais longo" data-next="e2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sexo mais longo</div></div>
+            </div>
+            <div class="option" data-value="Ereções mais fortes" data-next="e2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Ereções mais fortes</div></div>
+            </div>
+            <div class="option" data-value="Tudo acima" data-next="e2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Quero melhorar tudo acima</div></div>
+            </div>
+        </div>
+        <img src="img-pocket.png" alt="" class="load-photo" style="margin-top:28px">
+    </div>
+
+    <!-- ═══ E2: PERFORMANCE ATUAL ═══ -->
+    <div class="slide" data-step="e2" data-label="Performance hoje" data-progress="12">
+        <div class="step-pill"><i class="done">1</i><i class="now">2</i><i>3</i></div>
+        <h2 class="q-text">Como está sua performance hoje?</h2>
+        <div class="options">
+            <div class="option" data-value="Boa, mas posso mais" data-next="e3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Boa, mas sei que posso mais</div></div>
+            </div>
+            <div class="option" data-value="Caiu recentemente" data-next="e3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Caiu nos últimos tempos</div></div>
+            </div>
+            <div class="option" data-value="Ruim há muito tempo" data-next="e3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não está legal há muito tempo</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E3: URGÊNCIA ═══ -->
+    <div class="slide" data-step="e3" data-label="Urgência" data-progress="18">
+        <div class="step-pill"><i class="done">1</i><i class="done">2</i><i class="now">3</i></div>
+        <h2 class="q-text">Quando você quer começar a sentir a diferença?</h2>
+        <div class="options">
+            <div class="option" data-value="Resultado rápido" data-next="e4">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Quero resultado rápido</div></div>
+            </div>
+            <div class="option" data-value="Próximos dias" data-next="e4">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Nos próximos dias</div></div>
+            </div>
+            <div class="option" data-value="Ainda avaliando" data-next="e4">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Ainda estou avaliando</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E4: COMO FUNCIONA ═══ -->
+    <div class="slide" data-step="e4" data-progress="24">
+        <h2 class="q-text" style="text-align:center">Veja como é simples</h2>
+        <div class="how-list">
+            <div class="how-item">
+                <div class="how-title">1 — Responda algumas perguntas</div>
+                <div class="how-desc">Conte rapidamente sobre sua saúde. Um médico analisará suas respostas online.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-title">2 — Indicação inicial</div>
+                <div class="how-desc">Você recebe uma orientação de tratamento personalizada, ainda ajustável pelo médico.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-title">3 — Avaliação médica</div>
+                <div class="how-desc">Seu caso é revisado e você recebe a recomendação final.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-title">4 — Entrega em casa</div>
+                <div class="how-desc">Receita enviada à farmácia e tratamento entregue com discrição e frete grátis.</div>
+            </div>
+        </div>
+        <button class="btn-next btn-wide" data-next="l1">Começar a minha consulta →</button>
+        <p class="consent">
+            Ao continuar você está de acordo com o
+            <a href="#" data-todo="termo-de-consentimento">Termo de Consentimento</a>
+            para tratamento de dados pessoais da Naipe Azul, inclusive dados sensíveis relativos à saúde.
+        </p>
+    </div>
+
+    <!-- ═══ L1: CARREGAMENTO + PROVA SOCIAL ═══ -->
+    <div class="slide load-slide" data-step="l1" data-progress="30"
+         data-auto="e6" data-duration="3200">
+        <div class="ring">
+            <svg width="150" height="150">
+                <circle class="track" cx="75" cy="75" r="68"></circle>
+                <circle class="bar"   cx="75" cy="75" r="68"></circle>
+            </svg>
+            <div class="ring-label">
+                <div class="ring-pct"><span data-ring-pct>0</span><small>%</small></div>
+            </div>
+        </div>
+        <p class="load-headline">
+            dos homens que usam <b>Naipe Azul</b> dizem se sentir mais confiantes na hora H.
+        </p>
+        <img src="img-package.png" alt="" class="load-photo">
+    </div>
+
+    <!-- ═══ E6: FAIXA ETÁRIA ═══ -->
+    <div class="slide" data-step="e6" data-label="Faixa etária" data-progress="36">
+        <h2 class="q-text">Qual a sua faixa etária?</h2>
+        <p class="q-sub">Isso nos ajuda a personalizar sua recomendação.</p>
+        <div class="card-grid">
+            <div class="card-opt" data-value="18-29" data-next="e7">
+                <div class="card-suit">♠</div>
+                <div class="card-age">18–29</div>
+                <div class="card-note">anos</div>
+            </div>
+            <div class="card-opt" data-value="30-39" data-next="e7">
+                <div class="card-suit">♥</div>
+                <div class="card-age">30–39</div>
+                <div class="card-note">anos</div>
+            </div>
+            <div class="card-opt" data-value="40-49" data-next="e7">
+                <div class="card-suit">♦</div>
+                <div class="card-age">40–49</div>
+                <div class="card-note">anos</div>
+            </div>
+            <div class="card-opt" data-value="50+" data-next="e7">
+                <div class="card-suit">♣</div>
+                <div class="card-age">50+</div>
+                <div class="card-note">anos</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E7: PESO ═══ -->
+    <div class="slide" data-step="e7" data-progress="42">
+        <h2 class="q-text" style="text-align:center">Qual é o seu peso atual?</h2>
+        <div class="ruler-wrap">
+            <div class="weight-display">
+                <span class="weight-value" id="weightValue">70</span><span class="weight-unit">kg</span>
+            </div>
+            <div class="ruler-ticks"></div>
+            <input type="range" class="ruler" id="weightRange" min="45" max="160" step="1" value="70">
+            <div class="ruler-scale">
+                <span>45</span><span>70</span><span>100</span><span>130</span><span>160</span>
+            </div>
+            <p class="ruler-hint">← Arraste para ajustar →</p>
+        </div>
+        <button class="btn-next btn-wide" data-next="e8">Continuar</button>
+    </div>
+
+    <!-- ═══ E8: PRINCIPAL PREOCUPAÇÃO ═══ -->
+    <div class="slide" data-step="e8" data-label="Preocupação principal" data-progress="48">
+        <h2 class="q-text">Qual a sua principal preocupação?</h2>
+        <p class="q-sub">Selecione a que mais se aplica a você.</p>
+        <div class="options">
+            <div class="option" data-value="Dificuldade de ereção" data-next="e9">
+                <div class="opt-check"></div>
+                <div class="opt-body">
+                    <div class="opt-label">Dificuldade de ereção</div>
+                    <div class="opt-desc">Dificuldade em iniciar uma ereção</div>
+                </div>
+            </div>
+            <div class="option" data-value="Ereção não mantida" data-next="e9">
+                <div class="opt-check"></div>
+                <div class="opt-body">
+                    <div class="opt-label">Ereção não mantida</div>
+                    <div class="opt-desc">A ereção não dura o suficiente</div>
+                </div>
+            </div>
+            <div class="option" data-value="Falta de desejo" data-next="e9">
+                <div class="opt-check"></div>
+                <div class="opt-body">
+                    <div class="opt-label">Falta de desejo</div>
+                    <div class="opt-desc">Baixa libido ou interesse sexual</div>
+                </div>
+            </div>
+            <div class="option" data-value="Ejaculação precoce" data-next="e9">
+                <div class="opt-check"></div>
+                <div class="opt-body">
+                    <div class="opt-label">Ejaculação precoce</div>
+                    <div class="opt-desc">Dificuldade em controlar o momento</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E9: FREQUÊNCIA DO PROBLEMA ═══ -->
+    <div class="slide" data-step="e9" data-label="Frequência do sintoma" data-progress="54">
+        <h2 class="q-text">Com que frequência isso acontece?</h2>
+        <div class="options">
+            <div class="option" data-value="Sempre" data-next="l2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sempre</div></div>
+            </div>
+            <div class="option" data-value="Frequentemente" data-next="l2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Frequentemente</div></div>
+            </div>
+            <div class="option" data-value="Às vezes" data-next="l2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Às vezes</div></div>
+            </div>
+            <div class="option" data-value="Raramente" data-next="l2">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Raramente</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ L2: AMBIENTE SEGURO + DEPOIMENTOS ═══ -->
+    <div class="slide load-slide" data-step="l2" data-progress="60"
+         data-auto="e11" data-duration="4200">
+        <div class="ring">
+            <svg width="150" height="150">
+                <circle class="track" cx="75" cy="75" r="68"></circle>
+                <circle class="bar"   cx="75" cy="75" r="68"></circle>
+            </svg>
+            <div class="ring-label">
+                <div class="ring-pct"><span data-ring-pct>0</span><small>%</small></div>
+                <div class="ring-caption">Ambiente seguro</div>
+            </div>
+        </div>
+        <div class="seal-row">
+            <span class="seal">Seguro</span>
+            <span class="seal">Discreto</span>
+            <span class="seal">Frete grátis</span>
+        </div>
+        <div class="review">
+            <div class="review-suit">♠</div>
+            <div>
+                <div class="review-title">Relação mais duradoura</div>
+                <div class="review-quote">"Depois da Naipe Azul eu consigo ter uma relação mais duradoura."</div>
+                <div class="review-author">Sérgio V. &nbsp;<b>★★★★★</b></div>
+            </div>
+        </div>
+        <div class="review">
+            <div class="review-suit">♥</div>
+            <div>
+                <div class="review-title">Mais segurança</div>
+                <div class="review-quote">"Hoje me sinto muito mais tranquilo e seguro. É libertador."</div>
+                <div class="review-author">Felipe C. &nbsp;<b>★★★★★</b></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E11: SOBREPESO ═══ -->
+    <div class="slide" data-step="e11" data-label="Sobrepeso" data-progress="66">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Você está acima do peso (obeso/sobrepeso)?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="e12">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="e12">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E12: MEDICAMENTOS (ponto de ramificação) ═══ -->
+    <div class="slide" data-step="e12" data-label="Usa medicamento" data-progress="72">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Você faz uso de algum medicamento atualmente?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="e13a">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="e13b">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E13a: CIRURGIA ═══ -->
+    <div class="slide" data-step="e13a" data-label="Cirurgia" data-progress="78">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Já passou por alguma cirurgia?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="econd">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="eheart">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E13a-2: CIRURGIA CARDÍACA ═══ -->
+    <div class="slide" data-step="eheart" data-label="Cirurgia cardíaca" data-progress="80">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">A sua cirurgia foi no coração?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="econd">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E13b: NITRATOS ═══ -->
+    <div class="slide" data-step="e13b" data-label="Medicamento com nitrato" data-progress="78">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Você usa algum medicamento à base de nitrato?</h2>
+        <p class="q-sub">Ex.: Sustrate, Isordil, Monocordil, Imdur, Nitroderm, Nitromint.</p>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="econd">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ ECOND: CONDIÇÕES PRÉ-EXISTENTES ═══ -->
+    <div class="slide" data-step="econd" data-label="Condições de saúde" data-progress="84">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Você já teve alguma dessas condições?</h2>
+        <div class="options">
+            <div class="option" data-value="Nenhuma" data-next="e15">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Nenhuma das opções</div></div>
+            </div>
+            <div class="option" data-value="Diabetes" data-next="e15">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Diabetes</div></div>
+            </div>
+            <div class="option" data-value="Hipertensão" data-next="e15">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Hipertensão</div></div>
+            </div>
+            <div class="option" data-value="AVC" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">AVC</div></div>
+            </div>
+            <div class="option" data-value="Infarto" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Infarto</div></div>
+            </div>
+            <div class="option" data-value="Arritmia" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Arritmia</div></div>
+            </div>
+            <div class="option" data-value="Outros" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Outros</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ E15: FREQUÊNCIA PRETENDIDA (define quantidade) ═══ -->
+    <div class="slide" data-step="e15" data-label="Frequência pretendida" data-progress="92">
+        <h2 class="q-text">Com que frequência você pretende ter relações com melhor desempenho?</h2>
+        <p class="q-sub">Isso nos ajuda a definir a quantidade ideal pra você.</p>
+        <div class="options">
+            <div class="option" data-value="Até 4x/mês" data-next="l3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Até 4 vezes por mês</div></div>
+            </div>
+            <div class="option" data-value="Cerca de 6x/mês" data-next="l3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Cerca de 6 vezes por mês</div></div>
+            </div>
+            <div class="option" data-value="Cerca de 8x/mês" data-next="l3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Cerca de 8 vezes por mês</div></div>
+            </div>
+            <div class="option" data-value="10x ou mais/mês" data-next="l3">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">10 ou mais vezes por mês</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ L3: MONTANDO O PLANO ═══ -->
+    <div class="slide load-slide" data-step="l3" data-progress="97"
+         data-auto="done" data-duration="4600">
+        <div class="ring">
+            <svg width="150" height="150">
+                <circle class="track" cx="75" cy="75" r="68"></circle>
+                <circle class="bar"   cx="75" cy="75" r="68"></circle>
+            </svg>
+            <div class="ring-label">
+                <div class="ring-pct"><span data-ring-pct>0</span><small>%</small></div>
+                <div class="ring-caption">Montando seu plano</div>
+            </div>
+        </div>
+        <div class="checklist" data-checklist>
+            <div class="check-item"><span class="check-mark">✓</span> Histórico clínico</div>
+            <div class="check-item"><span class="check-mark">✓</span> Perfil de saúde</div>
+            <div class="check-item"><span class="check-mark">✓</span> Frequência de uso</div>
+            <div class="check-item"><span class="check-mark">✓</span> Objetivos e preferências</div>
+        </div>
+    </div>
+
+    <!-- ═══ STOP: BLOQUEIO POR HISTÓRICO ═══ -->
+    <div class="slide stop-slide" data-step="stop" data-progress="100">
+        <div class="stop-icon">⚠</div>
+        <div class="stop-tag">Atenção necessária</div>
+        <h2 class="stop-title">Vamos parar por aqui?</h2>
+        <div class="stop-card">
+            Pelo seu histórico de saúde, é indicado que você se consulte presencialmente
+            com um médico para falar com mais detalhes sobre seu caso. Se acha que
+            respondeu algo errado, clique abaixo e revise suas respostas.
+        </div>
+        <button class="btn-primary" data-review="e11">Revisar respostas</button>
+        <br>
+        <a href="index.html" class="btn-secondary">← Voltar ao site</a>
+        <p class="disclaimer">
+            Esta avaliação é apenas informativa e não substitui consulta médica.
+            Procure um profissional de saúde para uma avaliação completa.
+        </p>
+    </div>
+
+    <!-- ═══ DONE: PLANO PRONTO ═══ -->
+    <div class="slide done-slide" data-step="done" data-progress="100">
+        <div class="done-icon">✓</div>
+        <div class="done-tag">♦ Perfil aprovado</div>
+        <h2 class="done-title">Seu plano está pronto.</h2>
+        <p class="done-text">
+            Com base nas suas respostas, montamos um protocolo personalizado.
+            O médico parceiro fará a análise final antes de emitir a prescrição.
+        </p>
+        <div class="summary" id="summary"></div>
+        <button class="btn-primary" data-todo="checkout">🎯 &nbsp;Ver meu plano</button>
+        <br>
+        <a href="index.html" class="btn-secondary">← Voltar ao site</a>
+        <p class="disclaimer">
+            As respostas deste questionário não substituem avaliação médica completa.
+            Nosso médico parceiro fará a análise final antes de emitir a prescrição.
+        </p>
+    </div>
+
+</div>
+</main>
+
+<script>
+(function () {
+
+    const slides   = document.querySelectorAll('.slide');
+    const counter  = document.getElementById('stepCounter');
+    const progress = document.getElementById('progressFill');
+
+    // Rótulo do contador por etapa (as ramificações compartilham rótulo)
+    const LABELS = {
+        e1:'Etapa 1',  e2:'Etapa 2',  e3:'Etapa 3',  e4:'Como funciona',
+        l1:'Analisando', e6:'Etapa 4', e7:'Etapa 5',  e8:'Etapa 6',
+        e9:'Etapa 7',  l2:'Preparando', e11:'Saúde 1', e12:'Saúde 2',
+        e13a:'Saúde 3', e13b:'Saúde 3', eheart:'Saúde 4', econd:'Saúde 5',
+        e15:'Última etapa', l3:'Montando plano',
+        stop:'Encerrado', done:'✓ Concluído'
+    };
+
+    // Histórico de navegação — permite Voltar através das ramificações
+    const history = ['e1'];
+    let current   = 'e1';
+    let timer     = null;   // timer da tela de carregamento ativa
+
+    // Respostas indexadas por etapa. Ao voltar/revisar, as etapas que saem do
+    // caminho são descartadas — senão um ramo abandonado apareceria no resumo.
+    const answers = {};
+
+    function getSlide(step) {
+        return document.querySelector(`.slide[data-step="${step}"]`);
+    }
+
+    function paintProgress(step) {
+        const el = getSlide(step);
+        progress.style.width = (el.dataset.progress || 0) + '%';
+        counter.textContent  = LABELS[step] || '';
+    }
+
+    function goTo(step, { push = true } = {}) {
+        if (timer) { clearInterval(timer); timer = null; }
+
+        const cur = getSlide(current);
+        cur.classList.add('exit');
+
+        setTimeout(() => {
+            cur.classList.remove('active', 'exit');
+            current = step;
+            if (push) history.push(step);
+
+            const next = getSlide(current);
+            next.classList.add('active');
+            paintProgress(current);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (current === 'done') renderSummary();
+            if (next.dataset.auto) runLoader(next);
+        }, 280);
+    }
+
+    // Descarta respostas de etapas que não estão mais no caminho percorrido
+    function pruneAnswers() {
+        Object.keys(answers).forEach(step => {
+            if (!history.includes(step)) delete answers[step];
+        });
+    }
+
+    function goBack() {
+        if (history.length < 2) return;
+        history.pop();
+        pruneAnswers();
+        goTo(history[history.length - 1], { push: false });
+    }
+
+    // Rebobina até uma etapa anterior (botão "Revisar respostas")
+    function rewindTo(step) {
+        const i = history.lastIndexOf(step);
+        if (i === -1) return goTo(step);
+        history.length = i + 1;
+        pruneAnswers();
+        goTo(step, { push: false });
+    }
+
+    /* ── Telas de carregamento: anel + checklist, avanço automático ── */
+    function runLoader(slide) {
+        const bar   = slide.querySelector('.ring .bar');
+        const pctEl = slide.querySelector('[data-ring-pct]');
+        const items = slide.querySelectorAll('[data-checklist] .check-item');
+
+        const R    = 68;
+        const CIRC = 2 * Math.PI * R;
+        bar.style.strokeDasharray  = CIRC;
+        bar.style.strokeDashoffset = CIRC;
+
+        items.forEach(i => i.classList.remove('done'));
+
+        const duration = parseInt(slide.dataset.duration || 3000);
+        const stepMs   = 40;
+        const target   = 100;
+        let pct        = 0;
+
+        timer = setInterval(() => {
+            pct = Math.min(target, pct + (100 / (duration / stepMs)));
+
+            bar.style.strokeDashoffset = CIRC - (CIRC * pct / 100);
+            pctEl.textContent = Math.round(pct);
+
+            // marca cada item do checklist conforme o anel avança
+            items.forEach((item, i) => {
+                if (pct >= ((i + 1) / items.length) * 92) item.classList.add('done');
+            });
+
+            if (pct >= target) {
+                clearInterval(timer);
+                timer = null;
+                setTimeout(() => goTo(slide.dataset.auto), 500);
+            }
+        }, stepMs);
+    }
+
+    /* ── Resumo na tela final, na ordem do caminho percorrido ── */
+    function renderSummary() {
+        const box = document.getElementById('summary');
+        box.innerHTML = [...new Set(history)]
+            .filter(step => answers[step])
+            .map(step => {
+                const { label, value } = answers[step];
+                return `<div class="summary-row"><span>${label}</span><b>${value}</b></div>`;
+            })
+            .join('');
+    }
+
+    /* ── Seleção de opção: registra a resposta e avança ── */
+    function bindChoice(el, step, label) {
+        el.addEventListener('click', () => {
+            const group = el.parentElement.children;
+            [...group].forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+
+            answers[step] = { label, value: el.dataset.value };
+            setTimeout(() => goTo(el.dataset.next), 220);
+        });
+    }
+
+    slides.forEach(slide => {
+        const step  = slide.dataset.step;
+        const label = slide.dataset.label || '';
+
+        slide.querySelectorAll('.option, .card-opt').forEach(o => bindChoice(o, step, label));
+
+        // Botões que só avançam (telas institucionais e o peso)
+        slide.querySelectorAll('.btn-next[data-next]').forEach(btn => {
+            btn.addEventListener('click', () => goTo(btn.dataset.next));
+        });
+
+        // "Revisar respostas" na tela de bloqueio
+        slide.querySelectorAll('[data-review]').forEach(btn => {
+            btn.addEventListener('click', () => rewindTo(btn.dataset.review));
+        });
+
+        // Ações ainda não implementadas (checkout, termo de consentimento)
+        slide.querySelectorAll('[data-todo]').forEach(el => {
+            el.addEventListener('click', e => e.preventDefault());
+        });
+    });
+
+    /* ── Régua de peso ── */
+    const range  = document.getElementById('weightRange');
+    const wValue = document.getElementById('weightValue');
+
+    function recordWeight() {
+        answers['e7'] = { label: 'Peso atual', value: range.value + ' kg' };
+    }
+
+    range.addEventListener('input', () => {
+        wValue.textContent = range.value;
+        recordWeight();
+    });
+
+    // Registra também quem aceita o valor padrão sem arrastar a régua
+    getSlide('e7').querySelector('.btn-next').addEventListener('click', recordWeight);
+
+    /* ── Voltar pelo teclado / gesto do navegador ── */
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') goBack();
+    });
+
+    paintProgress('e1');
+
+})();
+</script>
+</body>
+</html>
