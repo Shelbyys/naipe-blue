@@ -776,8 +776,10 @@
     </div>
 
     <!-- ═══ L1: CARREGAMENTO + PROVA SOCIAL ═══ -->
+    <!-- O anel para em 83 porque o número é a estatística que abre a frase
+         abaixo, não uma barra de progresso — não pode fechar em 100%. -->
     <div class="slide load-slide" data-step="l1" data-progress="30"
-         data-auto="e6" data-duration="3200">
+         data-auto="e6" data-duration="6000" data-target="83">
         <div class="ring">
             <svg width="150" height="150">
                 <circle class="track" cx="75" cy="75" r="68"></circle>
@@ -899,7 +901,7 @@
 
     <!-- ═══ L2: AMBIENTE SEGURO + DEPOIMENTOS ═══ -->
     <div class="slide load-slide" data-step="l2" data-progress="60"
-         data-auto="e11" data-duration="4200">
+         data-auto="e11" data-duration="7000">
         <div class="ring">
             <svg width="150" height="150">
                 <circle class="track" cx="75" cy="75" r="68"></circle>
@@ -1027,15 +1029,15 @@
                 <div class="opt-check"></div>
                 <div class="opt-body"><div class="opt-label">Diabetes</div></div>
             </div>
-            <div class="option" data-value="Hipertensão" data-next="e15">
+            <div class="option" data-value="Hipertensão" data-next="ehip">
                 <div class="opt-check"></div>
                 <div class="opt-body"><div class="opt-label">Hipertensão</div></div>
             </div>
-            <div class="option" data-value="AVC" data-next="stop">
+            <div class="option" data-value="AVC" data-next="eavc">
                 <div class="opt-check"></div>
                 <div class="opt-body"><div class="opt-label">AVC</div></div>
             </div>
-            <div class="option" data-value="Infarto" data-next="stop">
+            <div class="option" data-value="Infarto" data-next="einf">
                 <div class="opt-check"></div>
                 <div class="opt-body"><div class="opt-label">Infarto</div></div>
             </div>
@@ -1046,6 +1048,54 @@
             <div class="option" data-value="Outros" data-next="stop">
                 <div class="opt-check"></div>
                 <div class="opt-body"><div class="opt-label">Outros</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ EHIP: HIPERTENSÃO — SÓ BLOQUEIA SE NÃO CONTROLADA ═══ -->
+    <div class="slide" data-step="ehip" data-label="Pressão arterial" data-progress="86">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Sua pressão costuma ficar acima de 16 por 9 (160/90 mmHg)?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="e15">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ EAVC: AVC — SÓ BLOQUEIA SE RECENTE ═══ -->
+    <div class="slide" data-step="eavc" data-label="AVC recente" data-progress="86">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Você teve AVC há menos de 3 anos?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="e15">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ EINF: INFARTO — SÓ BLOQUEIA SE RECENTE ═══ -->
+    <div class="slide" data-step="einf" data-label="Infarto recente" data-progress="86">
+        <div class="q-number">Histórico de saúde</div>
+        <h2 class="q-text">Você teve Infarto há menos de 3 anos?</h2>
+        <div class="options">
+            <div class="option" data-value="Não" data-next="e15">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Não</div></div>
+            </div>
+            <div class="option" data-value="Sim" data-next="stop">
+                <div class="opt-check"></div>
+                <div class="opt-body"><div class="opt-label">Sim</div></div>
             </div>
         </div>
     </div>
@@ -1076,7 +1126,7 @@
 
     <!-- ═══ L3: MONTANDO O PLANO ═══ -->
     <div class="slide load-slide" data-step="l3" data-progress="97"
-         data-auto="done" data-duration="4600">
+         data-auto="done" data-duration="7500">
         <div class="ring">
             <svg width="150" height="150">
                 <circle class="track" cx="75" cy="75" r="68"></circle>
@@ -1149,6 +1199,7 @@
         l1:'Analisando', e6:'Etapa 4', e7:'Etapa 5',  e8:'Etapa 6',
         e9:'Etapa 7',  l2:'Preparando', e11:'Saúde 1', e12:'Saúde 2',
         e13a:'Saúde 3', e13b:'Saúde 3', eheart:'Saúde 4', econd:'Saúde 5',
+        ehip:'Saúde 6', eavc:'Saúde 6', einf:'Saúde 6',
         e15:'Última etapa', l3:'Montando plano',
         stop:'Encerrado', done:'✓ Concluído'
     };
@@ -1229,9 +1280,9 @@
 
         items.forEach(i => i.classList.remove('done'));
 
-        const duration = parseInt(slide.dataset.duration || 3000);
-        const stepMs   = 40;
-        const target   = 100;
+        const duration = parseInt(slide.dataset.duration || 6000);
+        const stepMs   = 60;
+        const target   = parseInt(slide.dataset.target || 100);
         let pct        = 0;
 
         timer = setInterval(() => {
