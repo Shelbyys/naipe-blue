@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naipe Azul — Finalizar Pedido</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+        --bg:      #EEF2F8;
+        --card:    #FFFFFF;
+        --border:  #E5E9F2;
+        --ink:     #0B1220;
+        --muted:   #6B7280;
+        --blue:    #2F80ED;
+        --blue-soft:#EAF2FE;
+        --gold:    #C9A84C;
+        --gold-lt: #E8C97A;
+        --green:   #16A34A;
+        --orange:  #F97316;
+        --navy:    #080F1E;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family:'Inter', system-ui, sans-serif;
+        background:var(--bg);
+        color:var(--ink);
+        min-height:100vh;
+    }
+
+    header {
+        background:var(--navy);
+        padding:16px 24px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+    .header-logo img { height:30px; width:auto; }
+    .header-secure {
+        font-size:12px; font-weight:700; color:var(--green);
+        display:flex; align-items:center; gap:5px;
+    }
+
+    main { max-width:560px; margin:0 auto; padding:0 0 60px; }
+
+    /* ── HERO CAROUSEL ── */
+    .hero {
+        position:relative;
+        aspect-ratio:4/3;
+        overflow:hidden;
+        background:#DDE3EE;
+    }
+    .hero-slide {
+        position:absolute; inset:0;
+        width:100%; height:100%;
+        object-fit:cover;
+        opacity:0; transition:opacity .6s ease;
+    }
+    .hero-slide.active { opacity:1; }
+    .hero-banner {
+        position:absolute; left:16px; right:16px; bottom:44px;
+        display:flex; flex-direction:column; gap:6px;
+        align-items:flex-start;
+    }
+    .hero-banner span {
+        background:var(--blue);
+        color:#fff; font-weight:800; font-size:15px;
+        padding:8px 14px; border-radius:8px;
+        box-shadow:0 4px 14px rgba(0,0,0,.2);
+    }
+    .hero-dots {
+        position:absolute; bottom:16px; left:0; right:0;
+        display:flex; justify-content:center; gap:6px;
+    }
+    .hero-dots span {
+        width:6px; height:6px; border-radius:50%;
+        background:rgba(255,255,255,.55);
+        cursor:pointer;
+    }
+    .hero-dots span.active { background:#fff; width:18px; border-radius:4px; }
+
+    /* ── SECTION WRAPPER ── */
+    .co-section { padding:24px 20px 0; }
+
+    .plan-title {
+        text-align:center; font-size:17px; font-weight:800;
+        margin-bottom:18px;
+    }
+
+    /* ── SUBSCRIBE TOGGLE ── */
+    .subscribe-row {
+        display:flex; align-items:center; gap:12px;
+        margin-bottom:18px;
+    }
+    .switch { position:relative; width:44px; height:26px; flex-shrink:0; }
+    .switch input { opacity:0; width:0; height:0; }
+    .switch .slider {
+        position:absolute; inset:0; background:#D1D5DB;
+        border-radius:20px; transition:.2s; cursor:pointer;
+    }
+    .switch .slider::before {
+        content:''; position:absolute; width:20px; height:20px;
+        left:3px; top:3px; background:#fff; border-radius:50%;
+        transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3);
+    }
+    .switch input:checked + .slider { background:var(--blue); }
+    .switch input:checked + .slider::before { transform:translateX(18px); }
+    .subscribe-label { font-size:14px; font-weight:700; color:var(--ink); }
+    .reco-tag {
+        margin-left:auto;
+        font-size:12px; font-weight:800; color:var(--gold);
+        display:flex; align-items:center; gap:4px;
+        white-space:nowrap;
+    }
+
+    /* ── GIFT BANNER ── */
+    .gift-banner {
+        display:flex; align-items:center; gap:12px;
+        background:var(--blue-soft);
+        border:1px solid #CFE1FB;
+        border-radius:14px;
+        padding:14px 16px;
+        margin-bottom:20px;
+    }
+    .gift-icon { font-size:28px; flex-shrink:0; }
+    .gift-title {
+        font-size:11px; font-weight:800; letter-spacing:.3px;
+        color:var(--ink); text-transform:uppercase;
+        margin-bottom:2px;
+    }
+    .gift-sub { font-size:13px; color:var(--muted); }
+    .gift-sub.unlocked { color:var(--green); font-weight:700; }
+
+    /* ── PLAN CARDS ── */
+    .plans { display:flex; flex-direction:column; gap:12px; margin-bottom:8px; }
+    .plan-opt {
+        position:relative;
+        background:var(--card);
+        border:2px solid var(--border);
+        border-radius:14px;
+        padding:16px 18px;
+        cursor:pointer;
+        transition:border-color .15s;
+    }
+    .plan-opt.selected { border-color:var(--blue); }
+    .plan-opt-top {
+        display:flex; justify-content:space-between; align-items:baseline;
+        margin-bottom:8px;
+    }
+    .plan-opt-name { font-size:15px; font-weight:800; }
+    .plan-opt-name small { font-weight:600; color:var(--muted); font-size:13px; }
+    .plan-opt-badge {
+        font-size:10px; font-weight:800; letter-spacing:.3px;
+        color:var(--muted); text-transform:uppercase;
+    }
+    .plan-opt.selected .plan-opt-badge { color:var(--blue); }
+    .plan-opt-row {
+        display:flex; justify-content:space-between; align-items:flex-end;
+    }
+    .plan-opt-freight { font-size:12px; color:var(--blue); font-weight:700; }
+    .plan-opt-off { font-size:12px; color:var(--orange); font-weight:800; text-align:right; }
+    .plan-opt-price { text-align:right; }
+    .plan-opt-price s { font-size:12px; color:var(--muted); }
+    .plan-opt-price b { display:block; font-size:19px; font-weight:900; }
+    .plan-opt-month { font-size:12px; color:var(--muted); }
+    .plan-opt-peruse { font-size:12px; color:var(--muted); text-align:right; }
+
+    .installment {
+        text-align:center; font-size:14px; color:var(--muted);
+        margin:14px 0 4px;
+    }
+    .installment b { color:var(--ink); font-size:18px; }
+
+    /* ── FORM BLOCKS (reskin claro) ── */
+    .co-block {
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:14px;
+        padding:22px;
+        margin-top:20px;
+    }
+    .co-block-title {
+        font-size:15px; font-weight:800; margin-bottom:16px;
+        display:flex; align-items:center; gap:10px;
+        color:var(--ink);
+    }
+    .co-block-title span.n {
+        width:22px; height:22px; border-radius:50%;
+        background:var(--blue); color:#fff;
+        font-size:12px; font-weight:900;
+        display:inline-flex; align-items:center; justify-content:center;
+        flex-shrink:0;
+    }
+
+    .co-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .co-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    .co-grid-full { grid-column:1 / -1; }
+    @media (max-width: 480px) {
+        .co-grid, .co-grid-3 { grid-template-columns:1fr; }
+    }
+
+    .field { display:flex; flex-direction:column; gap:5px; }
+    .field label {
+        font-size:11px; font-weight:700; color:var(--muted);
+        text-transform:uppercase; letter-spacing:.4px;
+    }
+    .field input, .field select {
+        background:#F8F9FC;
+        border:1px solid var(--border);
+        border-radius:9px;
+        padding:12px 13px;
+        font-size:14px; font-weight:600;
+        color:var(--ink);
+        font-family:inherit;
+        outline:none;
+        transition:border-color .2s;
+    }
+    .field input::placeholder { color:#A3AABE; font-weight:400; }
+    .field input:focus, .field select:focus { border-color:var(--blue); }
+
+    .co-check {
+        display:flex; align-items:center; gap:9px;
+        margin-top:14px;
+        font-size:12px; color:var(--muted);
+    }
+    .co-check input { accent-color:var(--blue); width:15px; height:15px; }
+
+    .pay-tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .pay-tab {
+        flex:1;
+        background:#F8F9FC;
+        border:1px solid var(--border);
+        border-radius:9px;
+        padding:12px;
+        color:var(--muted);
+        font-family:inherit; font-size:13px; font-weight:700;
+        cursor:pointer; transition:all .2s;
+    }
+    .pay-tab.active { background:var(--blue-soft); border-color:var(--blue); color:var(--blue); }
+    .pay-panel { display:flex; flex-direction:column; gap:12px; }
+    .pay-panel[hidden] { display:none; }
+    .pay-info {
+        background:#F0FBF4;
+        border:1px solid #CDEEDA;
+        border-radius:9px;
+        padding:14px;
+        font-size:12px;
+        color:#166534;
+        line-height:1.6;
+    }
+
+    /* ── TOTALS / PAY ── */
+    .totals { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin-top:20px; }
+    .t-row { display:flex; justify-content:space-between; font-size:13px; color:var(--muted); padding:6px 0; }
+    .t-row.discount span:last-child { color:var(--green); }
+    .t-row .free { color:var(--green); font-weight:700; }
+    .t-row.total {
+        border-top:1px solid var(--border);
+        margin-top:6px; padding-top:12px;
+        font-size:17px; font-weight:900; color:var(--ink);
+    }
+    .t-note { font-size:11px; color:var(--green); font-weight:700; margin-top:4px; }
+
+    .btn-pay {
+        width:100%; margin-top:16px;
+        background:linear-gradient(135deg, var(--gold), var(--gold-lt));
+        color:var(--navy);
+        border:none; border-radius:12px;
+        padding:17px; font-size:15px; font-weight:800;
+        font-family:inherit; cursor:pointer;
+        box-shadow:0 6px 20px rgba(201,168,76,.35);
+    }
+    .pay-note {
+        margin-top:14px;
+        background:var(--blue-soft);
+        border:1px solid #CFE1FB;
+        border-radius:10px;
+        padding:13px 15px;
+        font-size:12px; line-height:1.6;
+        color:#1E3A5F;
+        text-align:center;
+    }
+    .pay-note[hidden] { display:none; }
+
+    .co-disclaimer {
+        font-size:11px; color:var(--muted);
+        text-align:center; line-height:1.6;
+        margin-top:16px;
+    }
+    .plan-change {
+        display:block; text-align:center;
+        font-size:12px; color:var(--blue);
+        text-decoration:none; font-weight:600;
+        margin-top:14px;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-logo"><img src="logo.png" alt="Naipe Azul"></div>
+    <div class="header-secure">🔒 Compra 100% segura</div>
+</header>
+
+<main>
+    <div class="hero">
+        <img src="img-package.png" class="hero-slide active">
+        <img src="img-pill-close.png" class="hero-slide">
+        <img src="img-pills.png" class="hero-slide">
+        <div class="hero-banner">
+            <span>Entrega discreta</span>
+            <span>direto na sua porta</span>
+        </div>
+        <div class="hero-dots">
+            <span class="active" data-i="0"></span>
+            <span data-i="1"></span>
+            <span data-i="2"></span>
+        </div>
+    </div>
+
+    <div class="co-section">
+        <h2 class="plan-title">Selecione o seu plano ideal</h2>
+
+        <label class="subscribe-row">
+            <span class="switch">
+                <input type="checkbox" id="subToggle">
+                <span class="slider"></span>
+            </span>
+            <span class="subscribe-label">Assine e Economize 10%</span>
+            <span class="reco-tag">★ Recomendado</span>
+        </label>
+
+        <div class="gift-banner">
+            <span class="gift-icon">🧴</span>
+            <div>
+                <div class="gift-title">Brinde grátis em pedidos acima de R$ 250,00</div>
+                <div class="gift-sub" id="giftSub">Desbloqueie seu Sérum 3 EM 1 hoje!</div>
+            </div>
+        </div>
+
+        <div class="plans" id="plans">
+            <div class="plan-opt" data-plan="essencial">
+                <div class="plan-opt-top">
+                    <div class="plan-opt-name">ESSENCIAL <small>(4 usos)</small></div>
+                </div>
+                <div class="plan-opt-row">
+                    <div class="plan-opt-freight">Frete Grátis</div>
+                    <div class="plan-opt-price"><b>R$ 207,90</b></div>
+                </div>
+                <div class="plan-opt-row">
+                    <div></div>
+                    <div class="plan-opt-peruse">R$ 51,98/uso</div>
+                </div>
+            </div>
+
+            <div class="plan-opt selected" data-plan="confianca">
+                <div class="plan-opt-top">
+                    <div class="plan-opt-name">CONFIANÇA <small>(12 usos)</small></div>
+                    <div class="plan-opt-badge">Mais vendido</div>
+                </div>
+                <div class="plan-opt-row">
+                    <div class="plan-opt-freight">Frete Grátis</div>
+                    <div class="plan-opt-off">32% OFF</div>
+                </div>
+                <div class="plan-opt-row">
+                    <div class="plan-opt-month">Equivale a R$ 122,63/mês</div>
+                    <div class="plan-opt-price"><s>R$ 518,73</s><b>R$ 367,90</b></div>
+                </div>
+                <div class="plan-opt-row">
+                    <div></div>
+                    <div class="plan-opt-peruse">R$ 30,66/uso</div>
+                </div>
+            </div>
+
+            <div class="plan-opt" data-plan="performance">
+                <div class="plan-opt-top">
+                    <div class="plan-opt-name">PERFORMANCE <small>(24 usos)</small></div>
+                    <div class="plan-opt-badge">Maior economia</div>
+                </div>
+                <div class="plan-opt-row">
+                    <div class="plan-opt-freight">Frete Grátis</div>
+                    <div class="plan-opt-off">41% OFF</div>
+                </div>
+                <div class="plan-opt-row">
+                    <div class="plan-opt-month">Equivale a R$ 82,23/mês</div>
+                    <div class="plan-opt-price"><s>R$ 789,44</s><b>R$ 493,40</b></div>
+                </div>
+                <div class="plan-opt-row">
+                    <div></div>
+                    <div class="plan-opt-peruse">R$ 20,56/uso</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="installment" id="installmentLine">ou <b>12x de R$ 30,66</b> sem juros</div>
+        <a href="funil.html" class="plan-change">Refazer a consulta e trocar de plano</a>
+    </div>
+
+    <div class="co-section" style="padding-top:0">
+        <div class="co-block">
+            <div class="co-block-title"><span class="n">1</span> Seus dados</div>
+            <div class="co-grid">
+                <div class="field co-grid-full">
+                    <label>Nome completo</label>
+                    <input type="text" placeholder="Como no seu documento">
+                </div>
+                <div class="field">
+                    <label>CPF</label>
+                    <input type="text" placeholder="000.000.000-00">
+                </div>
+                <div class="field">
+                    <label>WhatsApp</label>
+                    <input type="text" placeholder="(00) 00000-0000">
+                </div>
+                <div class="field co-grid-full">
+                    <label>E-mail</label>
+                    <input type="email" placeholder="seu@email.com">
+                </div>
+            </div>
+        </div>
+
+        <div class="co-block">
+            <div class="co-block-title"><span class="n">2</span> Endereço de entrega</div>
+            <div class="co-grid">
+                <div class="field">
+                    <label>CEP</label>
+                    <input type="text" placeholder="00000-000">
+                </div>
+                <div class="field">
+                    <label>Número</label>
+                    <input type="text" placeholder="Nº">
+                </div>
+                <div class="field co-grid-full">
+                    <label>Endereço</label>
+                    <input type="text" placeholder="Rua, avenida...">
+                </div>
+                <div class="field co-grid-full">
+                    <label>Complemento (opcional)</label>
+                    <input type="text" placeholder="Apto, bloco, referência...">
+                </div>
+                <div class="field">
+                    <label>Bairro</label>
+                    <input type="text" placeholder="Bairro">
+                </div>
+                <div class="field">
+                    <label>Cidade</label>
+                    <input type="text" placeholder="Cidade">
+                </div>
+                <div class="field co-grid-full">
+                    <label>Estado</label>
+                    <select>
+                        <option value="">Selecione</option>
+                        <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+                        <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                        <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+                        <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+                        <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+                        <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+                        <option>SP</option><option>SE</option><option>TO</option>
+                    </select>
+                </div>
+            </div>
+            <label class="co-check">
+                <input type="checkbox" checked>
+                Embalagem 100% discreta — sem identificação do produto por fora
+            </label>
+        </div>
+
+        <div class="co-block">
+            <div class="co-block-title"><span class="n">3</span> Forma de pagamento</div>
+            <div class="pay-tabs">
+                <button class="pay-tab active" data-pay="cartao" type="button">💳 Cartão</button>
+                <button class="pay-tab" data-pay="pix" type="button">⚡ Pix</button>
+                <button class="pay-tab" data-pay="boleto" type="button">🧾 Boleto</button>
+            </div>
+
+            <div class="pay-panel" data-panel="cartao">
+                <div class="field">
+                    <label>Número do cartão</label>
+                    <input type="text" placeholder="0000 0000 0000 0000">
+                </div>
+                <div class="co-grid-3">
+                    <div class="field">
+                        <label>Validade</label>
+                        <input type="text" placeholder="MM/AA">
+                    </div>
+                    <div class="field">
+                        <label>CVV</label>
+                        <input type="text" placeholder="000">
+                    </div>
+                    <div class="field">
+                        <label>Parcelas</label>
+                        <select id="installmentSelect"></select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Nome impresso no cartão</label>
+                    <input type="text" placeholder="Como está no cartão">
+                </div>
+            </div>
+
+            <div class="pay-panel" data-panel="pix" hidden>
+                <div class="pay-info">
+                    ⚡ Ao confirmar, geramos um QR Code Pix. A aprovação costuma acontecer em segundos e o pedido segue direto para separação.
+                </div>
+            </div>
+
+            <div class="pay-panel" data-panel="boleto" hidden>
+                <div class="pay-info">
+                    🧾 O boleto é gerado após a confirmação e vence em 3 dias úteis. O pedido é liberado assim que o pagamento é compensado.
+                </div>
+            </div>
+        </div>
+
+        <div class="totals">
+            <div class="t-row"><span>Plano selecionado</span><span id="tPlanName">Confiança (12 usos)</span></div>
+            <div class="t-row discount" id="subRow" hidden><span>Desconto assinatura (10%)</span><span id="tSubDiscount">- R$ 36,79</span></div>
+            <div class="t-row"><span>Frete</span><span class="free">Grátis</span></div>
+            <div class="t-row total"><span>Total</span><span id="tTotal">R$ 367,90</span></div>
+            <div class="t-note" id="giftNote" hidden>🎁 Sérum 3 em 1 incluso de brinde</div>
+        </div>
+
+        <button class="btn-pay" id="btnPay">🔒 &nbsp;Pagar <span id="btnPayValue">R$ 367,90</span></button>
+        <div class="pay-note" id="payNote" hidden>
+            O pagamento ainda está sendo configurado — em breve você vai poder concluir a compra direto por aqui. 🙌
+        </div>
+
+        <p class="co-disclaimer">
+            A prescrição é emitida somente após análise do médico parceiro.
+            Este pedido não substitui avaliação médica completa.
+        </p>
+    </div>
+</main>
+
+<script>
+(function () {
+    const PLANS = {
+        essencial:   { name: 'Essencial',   usos: 4,  total: 207.90 },
+        confianca:   { name: 'Confiança',   usos: 12, total: 367.90 },
+        performance: { name: 'Performance', usos: 24, total: 493.40 }
+    };
+
+    // Mapeia a frequência escolhida no funil pro plano equivalente
+    const FREQ_TO_PLAN = {
+        'Até 4x/mês':      'essencial',
+        'Cerca de 6x/mês': 'confianca',
+        'Cerca de 8x/mês': 'performance',
+        '10x ou mais/mês': 'performance'
+    };
+
+    const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    let selected  = 'confianca';
+    let subscribed = false;
+
+    // ── Carrossel do hero ──
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots   = document.querySelectorAll('.hero-dots span');
+    let heroIdx  = 0;
+    function paintHero(i) {
+        slides.forEach((s, si) => s.classList.toggle('active', si === i));
+        dots.forEach((d, di) => d.classList.toggle('active', di === i));
+        heroIdx = i;
+    }
+    dots.forEach(d => d.addEventListener('click', () => paintHero(parseInt(d.dataset.i))));
+    setInterval(() => paintHero((heroIdx + 1) % slides.length), 4000);
+
+    // ── Seleção de plano ──
+    function selectPlan(key) {
+        selected = key;
+        document.querySelectorAll('.plan-opt').forEach(el => {
+            el.classList.toggle('selected', el.dataset.plan === key);
+        });
+        paintTotals();
+    }
+    document.querySelectorAll('.plan-opt').forEach(el => {
+        el.addEventListener('click', () => selectPlan(el.dataset.plan));
+    });
+
+    // ── Assinatura (-10%) ──
+    document.getElementById('subToggle').addEventListener('change', e => {
+        subscribed = e.target.checked;
+        paintTotals();
+    });
+
+    function paintInstallmentSelect(total) {
+        const sel = document.getElementById('installmentSelect');
+        sel.innerHTML = '';
+        for (let n = 1; n <= 12; n++) {
+            const opt = document.createElement('option');
+            opt.textContent = n === 1 ? 'À vista' : n + 'x de ' + fmt(total / n) + ' sem juros';
+            sel.appendChild(opt);
+        }
+    }
+
+    function paintTotals() {
+        const plan = PLANS[selected];
+        const base = plan.total;
+        const total = subscribed ? base * 0.9 : base;
+        const perUse = total / plan.usos;
+
+        document.getElementById('installmentLine').innerHTML =
+            'ou <b>12x de ' + fmt(total / 12) + '</b> sem juros';
+
+        document.getElementById('tPlanName').textContent = plan.name + ' (' + plan.usos + ' usos)';
+        document.getElementById('tTotal').textContent = fmt(total);
+        document.getElementById('btnPayValue').textContent = fmt(total);
+
+        const subRow = document.getElementById('subRow');
+        if (subscribed) {
+            subRow.hidden = false;
+            document.getElementById('tSubDiscount').textContent = '- ' + fmt(base - total);
+        } else {
+            subRow.hidden = true;
+        }
+
+        const giftSub  = document.getElementById('giftSub');
+        const giftNote = document.getElementById('giftNote');
+        const unlocked = total >= 250;
+        giftSub.textContent = unlocked
+            ? '✓ Brinde desbloqueado!'
+            : 'Faltam ' + fmt(250 - total) + ' para desbloquear';
+        giftSub.classList.toggle('unlocked', unlocked);
+        giftNote.hidden = !unlocked;
+
+        paintInstallmentSelect(total);
+    }
+
+    // ── Plano vindo do funil (se houver) ──
+    const chosenFreq = localStorage.getItem('naipeAzulFrequencia');
+    if (chosenFreq && FREQ_TO_PLAN[chosenFreq]) selectPlan(FREQ_TO_PLAN[chosenFreq]);
+    else paintTotals();
+
+    // ── Abas de pagamento ──
+    document.querySelectorAll('.pay-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.querySelectorAll('.pay-panel').forEach(p => {
+                p.hidden = p.dataset.panel !== tab.dataset.pay;
+            });
+        });
+    });
+
+    // ── Botão pagar: ainda não processa, só avisa ──
+    document.getElementById('btnPay').addEventListener('click', () => {
+        document.getElementById('payNote').hidden = false;
+    });
+})();
+</script>
+
+</body>
+</html>

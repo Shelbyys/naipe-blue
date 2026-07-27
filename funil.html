@@ -1174,7 +1174,7 @@
             O médico parceiro fará a análise final antes de emitir a prescrição.
         </p>
         <div class="summary" id="summary"></div>
-        <button class="btn-primary" data-todo="checkout">🎯 &nbsp;Ver meu plano</button>
+        <a href="checkout.html" class="btn-primary">🎯 &nbsp;Ver meu plano</a>
         <br>
         <a href="index.html" class="btn-secondary">← Voltar ao site</a>
         <p class="disclaimer">
@@ -1239,7 +1239,10 @@
             paintProgress(current);
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            if (current === 'done') renderSummary();
+            if (current === 'done') {
+                renderSummary();
+                if (answers.e15) localStorage.setItem('naipeAzulFrequencia', answers.e15.value);
+            }
             if (next.dataset.auto) runLoader(next);
         }, 280);
     }
