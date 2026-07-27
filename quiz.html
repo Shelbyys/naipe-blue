@@ -257,6 +257,82 @@
         .warning-card.visible { display:flex; align-items:flex-start; gap:12px; }
         .warning-card span { font-size:18px; flex-shrink:0; }
 
+        /* ── CARREGANDO (entre a última pergunta e o resultado) ── */
+        .load-slide {
+            display:none;
+            text-align:center; padding-top:40px;
+            animation:slideIn .4s cubic-bezier(.4,0,.2,1);
+        }
+        .load-slide.active { display:block; }
+        .load-slide.exit   { animation:slideOut .3s cubic-bezier(.4,0,.2,1) forwards; }
+
+        .ring {
+            width:150px; height:150px;
+            margin:0 auto 32px;
+            position:relative;
+        }
+        .ring svg { transform:rotate(-90deg); }
+        .ring circle {
+            fill:none;
+            stroke-width:6;
+            stroke-linecap:round;
+        }
+        .ring .track { stroke:rgba(255,255,255,.08); }
+        .ring .bar {
+            stroke:var(--blue-el);
+            transition:stroke-dashoffset .3s linear;
+            filter:drop-shadow(0 0 6px rgba(30,144,255,.6));
+        }
+        .ring-label {
+            position:absolute; inset:0;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+        }
+        .ring-pct {
+            font-size:34px; font-weight:900;
+            letter-spacing:-1.5px;
+        }
+        .ring-pct small {
+            font-size:16px; font-weight:700;
+            color:var(--gold);
+        }
+        .ring-caption {
+            font-size:11px; font-weight:700;
+            letter-spacing:1px; text-transform:uppercase;
+            color:rgba(255,255,255,.3);
+            margin-top:4px;
+            max-width:100px; line-height:1.4;
+        }
+
+        .checklist {
+            max-width:340px;
+            margin:0 auto;
+            text-align:left;
+        }
+        .check-item {
+            display:flex; align-items:center; gap:14px;
+            padding:16px 4px;
+            border-bottom:1px solid rgba(255,255,255,.07);
+            font-size:14px; font-weight:700;
+            color:rgba(255,255,255,.3);
+            transition:color .3s;
+        }
+        .check-item:last-child { border-bottom:none; }
+        .check-item.done { color:var(--white); }
+        .check-mark {
+            width:20px; height:20px; border-radius:50%;
+            border:1.5px solid rgba(255,255,255,.15);
+            display:flex; align-items:center; justify-content:center;
+            font-size:10px; font-weight:800;
+            flex-shrink:0;
+            transition:all .3s;
+        }
+        .check-item.done .check-mark {
+            background:var(--green);
+            border-color:var(--green);
+            color:var(--navy);
+        }
+
         /* ── RESULTS ── */
         .result-slide {
             display:none;
@@ -717,6 +793,26 @@
         </div>
     </div>
 
+    <!-- ═══ CARREGANDO: ANALISANDO RESPOSTAS ═══ -->
+    <div class="load-slide" id="loading-slide">
+        <div class="ring">
+            <svg width="150" height="150">
+                <circle class="track" cx="75" cy="75" r="68"></circle>
+                <circle class="bar"   cx="75" cy="75" r="68"></circle>
+            </svg>
+            <div class="ring-label">
+                <div class="ring-pct"><span data-ring-pct>0</span><small>%</small></div>
+                <div class="ring-caption">Analisando respostas</div>
+            </div>
+        </div>
+        <div class="checklist" data-checklist>
+            <div class="check-item"><span class="check-mark">✓</span> Respostas do quiz</div>
+            <div class="check-item"><span class="check-mark">✓</span> Histórico de saúde</div>
+            <div class="check-item"><span class="check-mark">✓</span> Objetivo definido</div>
+            <div class="check-item"><span class="check-mark">✓</span> Compatibilidade com o tratamento</div>
+        </div>
+    </div>
+
     <!-- ═══ RESULTADO: APTO ═══ -->
     <div class="result-slide" id="result-apto">
         <div class="result-icon apto">✓</div>
@@ -814,14 +910,56 @@
         }, 280);
     }
 
+    // Anel + checklist entre a última pergunta e o resultado
+    function runLoader(onDone) {
+        const slide = document.getElementById('loading-slide');
+        const bar   = slide.querySelector('.ring .bar');
+        const pctEl = slide.querySelector('[data-ring-pct]');
+        const items = slide.querySelectorAll('[data-checklist] .check-item');
+
+        const R = 68, CIRC = 2 * Math.PI * R;
+        bar.style.strokeDasharray  = CIRC;
+        bar.style.strokeDashoffset = CIRC;
+        items.forEach(i => i.classList.remove('done'));
+
+        const duration = 5000, stepMs = 60;
+        let pct = 0;
+        const timer = setInterval(() => {
+            pct = Math.min(100, pct + (100 / (duration / stepMs)));
+            bar.style.strokeDashoffset = CIRC - (CIRC * pct / 100);
+            pctEl.textContent = Math.round(pct);
+
+            items.forEach((item, i) => {
+                if (pct >= ((i + 1) / items.length) * 92) item.classList.add('done');
+            });
+
+            if (pct >= 100) {
+                clearInterval(timer);
+                setTimeout(onDone, 400);
+            }
+        }, stepMs);
+    }
+
     function showResult(type) {
         const cur = getSlide(current);
         cur.classList.add('exit');
         setTimeout(() => {
             cur.classList.remove('active', 'exit');
-            document.getElementById('result-' + type).classList.add('active');
-            progress.style.width = '100%';
-            counter.textContent  = '✓ Concluído';
+
+            const loading = document.getElementById('loading-slide');
+            loading.classList.add('active');
+            progress.style.width = '97%';
+            counter.textContent  = 'Analisando...';
+
+            runLoader(() => {
+                loading.classList.add('exit');
+                setTimeout(() => {
+                    loading.classList.remove('active', 'exit');
+                    document.getElementById('result-' + type).classList.add('active');
+                    progress.style.width = '100%';
+                    counter.textContent  = '✓ Concluído';
+                }, 280);
+            });
         }, 280);
     }
 
