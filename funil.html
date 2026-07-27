@@ -503,6 +503,7 @@
             box-shadow:0 4px 20px rgba(30,144,255,.35);
             flex:1; max-width:260px;
         }
+        .btn-next[hidden] { display:none; }
         .btn-next:hover:not(:disabled) {
             transform:translateY(-2px);
             box-shadow:0 8px 30px rgba(30,144,255,.5);
@@ -843,7 +844,8 @@
     <!-- ═══ E8: PRINCIPAL PREOCUPAÇÃO ═══ -->
     <div class="slide" data-step="e8" data-label="Preocupação principal" data-progress="48">
         <h2 class="q-text">Qual a sua principal preocupação?</h2>
-        <p class="q-sub">Selecione a que mais se aplica a você.</p>
+        <p class="q-sub e8-default-note">Selecione a que mais se aplica a você.</p>
+        <p class="q-sub e8-suggestion-note" hidden>Já identificamos isso com base na sua resposta anterior — pode confirmar ou escolher outra.</p>
         <div class="options">
             <div class="option" data-value="Dificuldade de ereção" data-next="e9">
                 <div class="opt-check"></div>
@@ -874,6 +876,7 @@
                 </div>
             </div>
         </div>
+        <button class="btn-next e8-continue" hidden style="margin-top:20px">Continuar →</button>
     </div>
 
     <!-- ═══ E9: FREQUÊNCIA DO PROBLEMA ═══ -->
@@ -1244,7 +1247,43 @@
                 if (answers.e15) localStorage.setItem('naipeAzulFrequencia', answers.e15.value);
             }
             if (next.dataset.auto) runLoader(next);
+            if (current === 'e8') applyE8Suggestion();
         }, 280);
+    }
+
+    // E1 e E8 perguntam essencialmente a mesma coisa (objetivo vs. queixa
+    // específica) — em vez de perguntar de novo do zero, já pré-marcamos
+    // a opção equivalente com base na resposta da E1.
+    const E1_TO_E8 = {
+        'Sexo mais longo':     'Ejaculação precoce',
+        'Ereções mais fortes': 'Dificuldade de ereção'
+        // 'Tudo acima' fica sem sugestão — é ambíguo demais pra adivinhar.
+    };
+
+    function applyE8Suggestion() {
+        const slide       = getSlide('e8');
+        const defaultNote = slide.querySelector('.e8-default-note');
+        const suggestNote = slide.querySelector('.e8-suggestion-note');
+        const continueBtn = slide.querySelector('.e8-continue');
+        const options      = slide.querySelectorAll('.option');
+
+        options.forEach(o => o.classList.remove('selected'));
+
+        const suggestedValue = E1_TO_E8[answers.e1?.value];
+        const suggestedOpt   = suggestedValue
+            ? [...options].find(o => o.dataset.value === suggestedValue)
+            : null;
+
+        if (suggestedOpt) {
+            suggestedOpt.classList.add('selected');
+            defaultNote.hidden = true;
+            suggestNote.hidden = false;
+            continueBtn.hidden = false;
+        } else {
+            defaultNote.hidden = false;
+            suggestNote.hidden = true;
+            continueBtn.hidden = true;
+        }
     }
 
     // Descarta respostas de etapas que não estão mais no caminho percorrido
@@ -1345,6 +1384,11 @@
         // "Revisar respostas" na tela de bloqueio
         slide.querySelectorAll('[data-review]').forEach(btn => {
             btn.addEventListener('click', () => rewindTo(btn.dataset.review));
+        });
+
+        // "Continuar" da E8: confirma a opção já pré-selecionada por sugestão
+        slide.querySelectorAll('.e8-continue').forEach(btn => {
+            btn.addEventListener('click', () => slide.querySelector('.option.selected')?.click());
         });
 
         // Ações ainda não implementadas (checkout, termo de consentimento)
