@@ -255,6 +255,7 @@
     /* ── TOTALS / PAY ── */
     .totals { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin-top:20px; }
     .t-row { display:flex; justify-content:space-between; font-size:13px; color:var(--muted); padding:6px 0; }
+    .t-row[hidden] { display:none; }
     .t-row.discount span:last-child { color:var(--green); }
     .t-row .free { color:var(--green); font-weight:700; }
     .t-row.total {
@@ -266,13 +267,25 @@
 
     .btn-pay {
         width:100%; margin-top:16px;
+        display:flex; align-items:center; justify-content:center; gap:10px;
         background:linear-gradient(135deg, var(--gold), var(--gold-lt));
         color:var(--navy);
         border:none; border-radius:12px;
         padding:17px; font-size:15px; font-weight:800;
         font-family:inherit; cursor:pointer;
         box-shadow:0 6px 20px rgba(201,168,76,.35);
+        transition:opacity .2s;
     }
+    .btn-pay:disabled { cursor:default; opacity:.85; }
+    .btn-pay-spinner {
+        width:18px; height:18px;
+        border:2.5px solid rgba(8,15,30,.25);
+        border-top-color:var(--navy);
+        border-radius:50%;
+        animation:spin .7s linear infinite;
+        flex-shrink:0;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
     .pay-note {
         margin-top:14px;
         background:var(--blue-soft);
@@ -645,9 +658,21 @@
         });
     });
 
-    // ── Botão pagar: ainda não processa, só avisa ──
+    // ── Botão pagar: mostra carregando e só então avisa que ainda não processa ──
     document.getElementById('btnPay').addEventListener('click', () => {
-        document.getElementById('payNote').hidden = false;
+        const btn = document.getElementById('btnPay');
+        if (btn.disabled) return;
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn-pay-spinner"></span> Processando pagamento…';
+        document.getElementById('payNote').hidden = true;
+
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            document.getElementById('payNote').hidden = false;
+        }, 1800);
     });
 })();
 </script>
