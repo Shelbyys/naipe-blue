@@ -128,6 +128,16 @@
             margin-bottom:36px; line-height:1.6;
         }
 
+        .q-photo {
+            width:100%; max-width:420px;
+            max-height:220px;
+            object-fit:cover;
+            border-radius:16px;
+            margin:0 auto 28px;
+            display:block;
+            border:1px solid rgba(255,255,255,.08);
+        }
+
         /* ── OPTIONS ── */
         .options { display:flex; flex-direction:column; gap:12px; }
 
@@ -628,6 +638,7 @@
         <div class="q-number">Pergunta 06 / 07</div>
         <h2 class="q-text">Qual é o seu principal objetivo?</h2>
         <p class="q-sub">Isso define qual protocolo será indicado para você.</p>
+        <img src="img-objetivo.png" alt="" class="q-photo">
         <div class="options">
             <div class="option" data-value="duracao" data-score="0">
                 <span class="opt-check"></span>
