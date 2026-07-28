@@ -60,6 +60,17 @@
             color:var(--gold);
         }
 
+        .back-btn {
+            display:flex; align-items:center; gap:6px;
+            background:none; border:none;
+            color:rgba(255,255,255,.4);
+            font-family:inherit; font-size:13px; font-weight:700;
+            padding:24px 0 0; margin-bottom:-8px;
+            cursor:pointer; transition:color .2s;
+        }
+        .back-btn:hover { color:var(--white); }
+        .back-btn[hidden] { display:none; }
+
         /* ── PROGRESS ── */
         .progress-bar-wrap {
             height:3px;
@@ -266,19 +277,19 @@
 
         .ruler-wrap { margin:32px 0 12px; }
         .ruler-ticks {
-            height:26px;
+            height:44px;
             background:repeating-linear-gradient(
                 90deg,
                 rgba(255,255,255,.28) 0 1px,
                 transparent 1px 10%
             );
-            margin-bottom:-26px;
+            margin-bottom:-44px;
             pointer-events:none;
         }
 
         input[type=range].ruler {
             -webkit-appearance:none; appearance:none;
-            width:100%; height:26px;
+            width:100%; height:44px;
             background:transparent;
             cursor:grab;
         }
@@ -291,19 +302,23 @@
             height:2px;
             background:rgba(255,255,255,.12);
         }
+        /* Área de arraste bem maior que a agulha visível (fácil de pegar,
+           inclusive no toque), usando um degradê pra desenhar só a linha fina */
         input[type=range].ruler::-webkit-slider-thumb {
             -webkit-appearance:none; appearance:none;
-            width:4px; height:26px;
-            border:none; border-radius:2px;
-            background:var(--gold);
-            box-shadow:0 0 12px rgba(201,168,76,.7);
-            margin-top:-12px;
+            width:44px; height:44px;
+            border:none; border-radius:8px;
+            background:linear-gradient(to right,
+                transparent 0 46%, var(--gold) 46% 54%, transparent 54% 100%);
+            box-shadow:0 0 12px rgba(201,168,76,.55);
+            margin-top:-21px;
         }
         input[type=range].ruler::-moz-range-thumb {
-            width:4px; height:26px;
-            border:none; border-radius:2px;
-            background:var(--gold);
-            box-shadow:0 0 12px rgba(201,168,76,.7);
+            width:44px; height:44px;
+            border:none; border-radius:8px;
+            background:linear-gradient(to right,
+                transparent 0 46%, var(--gold) 46% 54%, transparent 54% 100%);
+            box-shadow:0 0 12px rgba(201,168,76,.55);
         }
 
         .ruler-scale {
@@ -686,6 +701,8 @@
 <main>
 <div class="funil-container">
 
+    <button class="back-btn" id="backBtn" type="button" hidden>← Voltar</button>
+
     <!-- ═══ E1: OBJETIVO ═══ -->
     <div class="slide active" data-step="e1" data-label="Objetivo" data-progress="6">
         <div class="step-pill"><i class="now">1</i><i>2</i><i>3</i></div>
@@ -780,7 +797,7 @@
     <!-- O anel para em 83 porque o número é a estatística que abre a frase
          abaixo, não uma barra de progresso — não pode fechar em 100%. -->
     <div class="slide load-slide" data-step="l1" data-progress="30"
-         data-auto="e6" data-duration="6000" data-target="83">
+         data-auto="e6" data-duration="4200" data-target="83">
         <div class="ring">
             <svg width="150" height="150">
                 <circle class="track" cx="75" cy="75" r="68"></circle>
@@ -904,7 +921,7 @@
 
     <!-- ═══ L2: AMBIENTE SEGURO + DEPOIMENTOS ═══ -->
     <div class="slide load-slide" data-step="l2" data-progress="60"
-         data-auto="e11" data-duration="7000">
+         data-auto="e11" data-duration="4800">
         <div class="ring">
             <svg width="150" height="150">
                 <circle class="track" cx="75" cy="75" r="68"></circle>
@@ -1129,7 +1146,7 @@
 
     <!-- ═══ L3: MONTANDO O PLANO ═══ -->
     <div class="slide load-slide" data-step="l3" data-progress="97"
-         data-auto="done" data-duration="7500">
+         data-auto="done" data-duration="5200">
         <div class="ring">
             <svg width="150" height="150">
                 <circle class="track" cx="75" cy="75" r="68"></circle>
@@ -1195,6 +1212,7 @@
     const slides   = document.querySelectorAll('.slide');
     const counter  = document.getElementById('stepCounter');
     const progress = document.getElementById('progressFill');
+    const backBtn  = document.getElementById('backBtn');
 
     // Rótulo do contador por etapa (as ramificações compartilham rótulo)
     const LABELS = {
@@ -1224,6 +1242,11 @@
         const el = getSlide(step);
         progress.style.width = (el.dataset.progress || 0) + '%';
         counter.textContent  = LABELS[step] || '';
+
+        // Esconde o "Voltar" na primeira pergunta, nas telas finais e
+        // durante os carregamentos automáticos (não faz sentido lá)
+        const noBack = history.length < 2 || el.dataset.auto || step === 'done' || step === 'stop';
+        backBtn.hidden = !!noBack;
     }
 
     function goTo(step, { push = true } = {}) {
@@ -1417,6 +1440,7 @@
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') goBack();
     });
+    backBtn.addEventListener('click', goBack);
 
     paintProgress('e1');
 
