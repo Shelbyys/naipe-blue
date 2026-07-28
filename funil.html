@@ -46,6 +46,9 @@
             align-items:center;
             border-bottom:1px solid rgba(255,255,255,.07);
         }
+        .header-left {
+            display:flex; align-items:center; gap:18px;
+        }
         .header-logo img {
             height:38px; width:auto;
             mix-blend-mode:lighten;
@@ -62,13 +65,20 @@
 
         .back-btn {
             display:flex; align-items:center; gap:6px;
-            background:none; border:none;
-            color:rgba(255,255,255,.4);
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.12);
+            border-radius:100px;
+            color:rgba(255,255,255,.75);
             font-family:inherit; font-size:13px; font-weight:700;
-            padding:24px 0 0; margin-bottom:-8px;
-            cursor:pointer; transition:color .2s;
+            padding:9px 16px 9px 14px;
+            cursor:pointer; transition:all .2s;
+            flex-shrink:0;
         }
-        .back-btn:hover { color:var(--white); }
+        .back-btn:hover {
+            color:var(--white);
+            background:rgba(255,255,255,.12);
+            border-color:rgba(255,255,255,.25);
+        }
         .back-btn[hidden] { display:none; }
 
         /* ── PROGRESS ── */
@@ -685,9 +695,12 @@
 
 <!-- HEADER -->
 <header>
-    <a href="index.html" class="header-logo">
-        <img src="logo.png" alt="Naipe Azul">
-    </a>
+    <div class="header-left">
+        <button class="back-btn" id="backBtn" type="button" hidden>← Voltar</button>
+        <a href="index.html" class="header-logo">
+            <img src="logo.png" alt="Naipe Azul">
+        </a>
+    </div>
     <span class="header-label">Consulta online</span>
     <span class="header-steps" id="stepCounter">Etapa 1</span>
 </header>
@@ -700,8 +713,6 @@
 <!-- MAIN -->
 <main>
 <div class="funil-container">
-
-    <button class="back-btn" id="backBtn" type="button" hidden>← Voltar</button>
 
     <!-- ═══ E1: OBJETIVO ═══ -->
     <div class="slide active" data-step="e1" data-label="Objetivo" data-progress="6">
