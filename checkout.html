@@ -277,6 +277,7 @@
         transition:opacity .2s;
     }
     .btn-pay:disabled { cursor:default; opacity:.85; }
+    .btn-pay[hidden] { display:none; }
     .btn-pay-spinner {
         width:18px; height:18px;
         border:2.5px solid rgba(8,15,30,.25);
@@ -297,6 +298,49 @@
         text-align:center;
     }
     .pay-note[hidden] { display:none; }
+
+    .pay-result { margin-top:16px; }
+    .pay-result[hidden] { display:none; }
+
+    .pix-box {
+        background:var(--card); border:1px solid var(--border); border-radius:14px;
+        padding:24px; text-align:center;
+    }
+    .pix-box img { width:220px; height:220px; margin:0 auto 14px; display:block; border-radius:8px; }
+    .pix-hint { font-size:13px; color:var(--muted); margin-bottom:14px; }
+    .pix-copy-row { display:flex; gap:8px; margin-bottom:16px; }
+    .pix-copy-row input {
+        flex:1; min-width:0;
+        background:#F8F9FC; border:1px solid var(--border); border-radius:9px;
+        padding:11px 12px; font-size:12px; color:var(--ink); font-family:inherit;
+    }
+    .pix-copy-row button {
+        background:var(--blue); color:#fff; border:none; border-radius:9px;
+        padding:0 18px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer;
+        flex-shrink:0;
+    }
+    .pix-status { font-size:14px; font-weight:700; color:var(--muted); }
+    .pix-status.paid { color:var(--green); }
+
+    .card-result {
+        border-radius:14px; padding:20px; text-align:center;
+        font-size:14px; font-weight:700; line-height:1.6;
+    }
+    .card-result[hidden] { display:none; }
+    .card-result.approved { background:#F0FBF4; border:1px solid #CDEEDA; color:#166534; }
+    .card-result.declined { background:#FEF2F2; border:1px solid #FECACA; color:#991B1B; }
+    .btn-retry {
+        display:block; margin:12px auto 0;
+        background:#fff; border:1px solid #FECACA; border-radius:9px;
+        padding:10px 18px; font-size:13px; font-weight:700; color:#991B1B;
+        font-family:inherit; cursor:pointer;
+    }
+
+    .pay-error {
+        margin-top:14px; background:#FEF2F2; border:1px solid #FECACA; color:#991B1B;
+        border-radius:10px; padding:13px 15px; font-size:13px; text-align:center; font-weight:600;
+    }
+    .pay-error[hidden] { display:none; }
 
     .co-disclaimer {
         font-size:11px; color:var(--muted);
@@ -418,19 +462,19 @@
             <div class="co-grid">
                 <div class="field co-grid-full">
                     <label>Nome completo</label>
-                    <input type="text" placeholder="Como no seu documento">
+                    <input type="text" id="custName" placeholder="Como no seu documento">
                 </div>
                 <div class="field">
                     <label>CPF</label>
-                    <input type="text" placeholder="000.000.000-00">
+                    <input type="text" id="custCpf" inputmode="numeric" placeholder="000.000.000-00">
                 </div>
                 <div class="field">
                     <label>WhatsApp</label>
-                    <input type="text" placeholder="(00) 00000-0000">
+                    <input type="text" id="custPhone" inputmode="numeric" placeholder="(00) 00000-0000">
                 </div>
                 <div class="field co-grid-full">
                     <label>E-mail</label>
-                    <input type="email" placeholder="seu@email.com">
+                    <input type="email" id="custEmail" placeholder="seu@email.com">
                 </div>
             </div>
         </div>
@@ -440,31 +484,31 @@
             <div class="co-grid">
                 <div class="field">
                     <label>CEP</label>
-                    <input type="text" placeholder="00000-000">
+                    <input type="text" id="addrCep" inputmode="numeric" placeholder="00000-000">
                 </div>
                 <div class="field">
                     <label>Número</label>
-                    <input type="text" placeholder="Nº">
+                    <input type="text" id="addrNumber" placeholder="Nº">
                 </div>
                 <div class="field co-grid-full">
                     <label>Endereço</label>
-                    <input type="text" placeholder="Rua, avenida...">
+                    <input type="text" id="addrStreet" placeholder="Rua, avenida...">
                 </div>
                 <div class="field co-grid-full">
                     <label>Complemento (opcional)</label>
-                    <input type="text" placeholder="Apto, bloco, referência...">
+                    <input type="text" id="addrComplement" placeholder="Apto, bloco, referência...">
                 </div>
                 <div class="field">
                     <label>Bairro</label>
-                    <input type="text" placeholder="Bairro">
+                    <input type="text" id="addrNeighborhood" placeholder="Bairro">
                 </div>
                 <div class="field">
                     <label>Cidade</label>
-                    <input type="text" placeholder="Cidade">
+                    <input type="text" id="addrCity" placeholder="Cidade">
                 </div>
                 <div class="field co-grid-full">
                     <label>Estado</label>
-                    <select>
+                    <select id="addrState">
                         <option value="">Selecione</option>
                         <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
                         <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
@@ -487,22 +531,21 @@
             <div class="pay-tabs">
                 <button class="pay-tab active" data-pay="cartao" type="button">💳 Cartão</button>
                 <button class="pay-tab" data-pay="pix" type="button">⚡ Pix</button>
-                <button class="pay-tab" data-pay="boleto" type="button">🧾 Boleto</button>
             </div>
 
             <div class="pay-panel" data-panel="cartao">
                 <div class="field">
                     <label>Número do cartão</label>
-                    <input type="text" placeholder="0000 0000 0000 0000">
+                    <input type="text" id="cardNumber" inputmode="numeric" placeholder="0000 0000 0000 0000">
                 </div>
                 <div class="co-grid-3">
                     <div class="field">
                         <label>Validade</label>
-                        <input type="text" placeholder="MM/AA">
+                        <input type="text" id="cardExpiry" inputmode="numeric" placeholder="MM/AA">
                     </div>
                     <div class="field">
                         <label>CVV</label>
-                        <input type="text" placeholder="000">
+                        <input type="text" id="cardCvv" inputmode="numeric" placeholder="000">
                     </div>
                     <div class="field">
                         <label>Parcelas</label>
@@ -511,7 +554,7 @@
                 </div>
                 <div class="field">
                     <label>Nome impresso no cartão</label>
-                    <input type="text" placeholder="Como está no cartão">
+                    <input type="text" id="cardHolderName" placeholder="Como está no cartão">
                 </div>
             </div>
 
@@ -520,13 +563,32 @@
                     ⚡ Ao confirmar, geramos um QR Code Pix. A aprovação costuma acontecer em segundos e o pedido segue direto para separação.
                 </div>
             </div>
+        </div>
 
-            <div class="pay-panel" data-panel="boleto" hidden>
-                <div class="pay-info">
-                    🧾 O boleto é gerado após a confirmação e vence em 3 dias úteis. O pedido é liberado assim que o pagamento é compensado.
+        <div class="pay-result" id="payResult" hidden>
+            <div id="payResultPix" hidden>
+                <div class="pix-box">
+                    <img id="pixQrImg" alt="QR Code Pix">
+                    <p class="pix-hint">Escaneie com o app do seu banco ou copie o código abaixo</p>
+                    <div class="pix-copy-row">
+                        <input type="text" id="pixCopyPaste" readonly>
+                        <button type="button" id="pixCopyBtn">Copiar</button>
+                    </div>
+                    <p class="pix-status" id="pixStatusText">⏳ Aguardando pagamento…</p>
+                </div>
+            </div>
+            <div id="payResultCard" hidden>
+                <div class="card-result approved" id="cardApproved" hidden>
+                    ✓ Pagamento aprovado! Seu pedido já foi confirmado.
+                </div>
+                <div class="card-result declined" id="cardDeclined" hidden>
+                    <span id="cardDeclinedMsg">✗ Pagamento recusado pela operadora do cartão.</span>
+                    <button type="button" class="btn-retry" id="cardRetryBtn">Tentar de novo</button>
                 </div>
             </div>
         </div>
+
+        <div class="pay-error" id="payError" hidden></div>
 
         <div class="totals">
             <div class="t-row"><span>Plano selecionado</span><span id="tPlanName">Confiança (12 usos)</span></div>
@@ -537,9 +599,6 @@
         </div>
 
         <button class="btn-pay" id="btnPay">🔒 &nbsp;Pagar <span id="btnPayValue">R$ 367,90</span></button>
-        <div class="pay-note" id="payNote" hidden>
-            O pagamento ainda está sendo configurado — em breve você vai poder concluir a compra direto por aqui. 🙌
-        </div>
 
         <p class="co-disclaimer">
             A prescrição é emitida somente após análise do médico parceiro.
@@ -550,6 +609,14 @@
 
 <script>
 (function () {
+    // Endereço do backend de pagamento (server/). Em produção, troque pelo
+    // domínio onde a API estiver publicada (ex: "https://api.naipeazul.com.br").
+    const API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+        ? 'http://localhost:7789'
+        : 'https://api.naipeazul.com.br';
+
+    // Só pra EXIBIÇÃO. Quem cobra de verdade é o server/index.js, que tem
+    // essa mesma tabela — se mudar o preço de um plano, mude nos dois lugares.
     const PLANS = {
         essencial:   { name: 'Essencial',   usos: 4,  total: 207.90 },
         confianca:   { name: 'Confiança',   usos: 12, total: 367.90 },
@@ -658,21 +725,159 @@
         });
     });
 
-    // ── Botão pagar: mostra carregando e só então avisa que ainda não processa ──
-    document.getElementById('btnPay').addEventListener('click', () => {
-        const btn = document.getElementById('btnPay');
+    // ── Envio real do pagamento (Asaas via server/) ──
+    const $ = id => document.getElementById(id);
+    const onlyDigits = s => String(s || '').replace(/\D/g, '');
+
+    function showError(msg) {
+        const el = $('payError');
+        el.textContent = msg;
+        el.hidden = false;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function hideError() { $('payError').hidden = true; }
+
+    function validate(method) {
+        const name  = $('custName').value.trim();
+        const email = $('custEmail').value.trim();
+        const cpf   = onlyDigits($('custCpf').value);
+        const phone = onlyDigits($('custPhone').value);
+        const cep   = onlyDigits($('addrCep').value);
+        const number = $('addrNumber').value.trim();
+
+        if (name.length < 3) return 'Informe seu nome completo.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Informe um e-mail válido.';
+        if (cpf.length !== 11) return 'Informe um CPF válido (11 dígitos).';
+        if (phone.length < 10) return 'Informe um WhatsApp válido, com DDD.';
+        if (cep.length !== 8) return 'Informe um CEP válido (8 dígitos).';
+        if (!number) return 'Informe o número do endereço.';
+
+        if (method === 'CREDIT_CARD') {
+            const cardNumber = onlyDigits($('cardNumber').value);
+            const expiry = $('cardExpiry').value.trim();
+            const cvv = onlyDigits($('cardCvv').value);
+            const holder = $('cardHolderName').value.trim();
+            if (cardNumber.length < 13) return 'Informe um número de cartão válido.';
+            if (!/^\d{2}\/\d{2}$/.test(expiry)) return 'Informe a validade no formato MM/AA.';
+            if (cvv.length < 3) return 'Informe o CVV do cartão.';
+            if (holder.length < 3) return 'Informe o nome impresso no cartão.';
+        }
+        return null;
+    }
+
+    function buildPayload(method) {
+        const [expMonth, expYear] = $('cardExpiry').value.trim().split('/');
+        return {
+            plan: selected,
+            subscribed,
+            paymentMethod: method,
+            installments: method === 'CREDIT_CARD' ? ($('installmentSelect').selectedIndex + 1) : undefined,
+            customer: {
+                name: $('custName').value.trim(),
+                email: $('custEmail').value.trim(),
+                cpf: onlyDigits($('custCpf').value),
+                phone: onlyDigits($('custPhone').value),
+            },
+            address: {
+                postalCode: onlyDigits($('addrCep').value),
+                addressNumber: $('addrNumber').value.trim(),
+            },
+            card: method === 'CREDIT_CARD' ? {
+                number: onlyDigits($('cardNumber').value),
+                holderName: $('cardHolderName').value.trim(),
+                expiryMonth: expMonth,
+                expiryYear: '20' + expYear,
+                ccv: onlyDigits($('cardCvv').value),
+            } : undefined,
+        };
+    }
+
+    let pollTimer = null;
+    function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+    function pollOrder(paymentId) {
+        stopPolling();
+        pollTimer = setInterval(async () => {
+            try {
+                const r = await fetch(`${API_BASE}/api/orders/${paymentId}`);
+                const data = await r.json();
+                if (!data.ok) return;
+                if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(data.status)) {
+                    stopPolling();
+                    const statusEl = $('pixStatusText');
+                    statusEl.textContent = '✓ Pagamento confirmado! Seu pedido já foi liberado.';
+                    statusEl.classList.add('paid');
+                }
+            } catch { /* tenta de novo no próximo ciclo */ }
+        }, 4000);
+    }
+
+    function showPixResult(data) {
+        $('payResult').hidden = false;
+        $('payResultPix').hidden = false;
+        $('payResultCard').hidden = true;
+        $('pixQrImg').src = 'data:image/png;base64,' + data.qrImage;
+        $('pixCopyPaste').value = data.qrPayload || '';
+        $('pixStatusText').textContent = '⏳ Aguardando pagamento…';
+        $('pixStatusText').classList.remove('paid');
+        pollOrder(data.paymentId);
+    }
+
+    function showCardResult(data) {
+        $('payResult').hidden = false;
+        $('payResultPix').hidden = true;
+        $('payResultCard').hidden = false;
+        const approved = ['CONFIRMED', 'RECEIVED'].includes(data.status);
+        $('cardApproved').hidden = !approved;
+        $('cardDeclined').hidden = approved;
+    }
+
+    $('pixCopyBtn').addEventListener('click', () => {
+        const input = $('pixCopyPaste');
+        input.select();
+        navigator.clipboard?.writeText(input.value).catch(() => {});
+        $('pixCopyBtn').textContent = 'Copiado!';
+        setTimeout(() => { $('pixCopyBtn').textContent = 'Copiar'; }, 2000);
+    });
+
+    $('cardRetryBtn').addEventListener('click', () => {
+        $('payResult').hidden = true;
+        $('btnPay').hidden = false;
+    });
+
+    $('btnPay').addEventListener('click', async () => {
+        const btn = $('btnPay');
         if (btn.disabled) return;
+        hideError();
+
+        const activeTab = document.querySelector('.pay-tab.active').dataset.pay;
+        const method = activeTab === 'pix' ? 'PIX' : 'CREDIT_CARD';
+
+        const validationError = validate(method);
+        if (validationError) { showError(validationError); return; }
 
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="btn-pay-spinner"></span> Processando pagamento…';
-        document.getElementById('payNote').hidden = true;
 
-        setTimeout(() => {
+        try {
+            const res = await fetch(`${API_BASE}/api/checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(buildPayload(method)),
+            });
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.error || 'Não foi possível processar o pagamento.');
+
+            btn.hidden = true;
+            if (method === 'PIX') showPixResult(data);
+            else showCardResult(data);
+        } catch (err) {
+            showError(err.message || 'Falha ao conectar com o servidor de pagamento. Tente novamente.');
+        } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
-            document.getElementById('payNote').hidden = false;
-        }, 1800);
+        }
     });
 })();
 </script>

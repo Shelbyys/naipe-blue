@@ -1,3 +1,8 @@
 # Resource forks do macOS (volume exFAT)
 ._*
 .DS_Store
+
+# Backend do checkout (Asaas)
+server/node_modules/
+server/.env
+server/data/
