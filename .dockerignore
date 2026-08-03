@@ -1,8 +1,6 @@
-# O build do backend só precisa da pasta server/ — o resto do repo
-# (site estático, imagens, vídeo) só deixaria o build mais lento.
-*
-!server
-!server/**
-server/node_modules
-server/.env
-server/data
+# Build do site estático (Dockerfile na raiz) — não precisa do
+# backend nem do histórico do git.
+server
+.git
+Dockerfile
+.dockerignore
