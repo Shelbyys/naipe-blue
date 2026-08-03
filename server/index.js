@@ -32,6 +32,11 @@ app.use(helmet());
 app.use(cors({ origin: ALLOWED_ORIGIN === '*' ? true : ALLOWED_ORIGIN.split(',') }));
 app.use(express.json({ limit: '200kb' }));
 
+app.get('/', (_req, res) => res.json({
+  service: 'Naipe Azul — API de pagamento',
+  info: 'Este serviço não é o site. É só o backend que o checkout.html chama pra criar cobranças na Asaas.',
+  health: '/health',
+}));
 app.get('/health', (_req, res) => res.json({ ok: true, asaas: asaas.enabled, env: ASAAS_ENV }));
 
 // ---------- limite simples de tentativas por IP (a rota mexe com pagamento de verdade) ----------
