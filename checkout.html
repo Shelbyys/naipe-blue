@@ -609,11 +609,10 @@
 
 <script>
 (function () {
-    // Endereço do backend de pagamento (server/). Em produção, troque pelo
-    // domínio onde a API estiver publicada (ex: "https://api.naipeazul.com.br").
+    // Endereço do backend de pagamento (server/, serviço "naipe_api" no EasyPanel).
     const API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
         ? 'http://localhost:7789'
-        : 'https://api.naipeazul.com.br';
+        : 'https://alisson-naipe-api.wdgseb.easypanel.host';
 
     // Só pra EXIBIÇÃO. Quem cobra de verdade é o server/index.js, que tem
     // essa mesma tabela — se mudar o preço de um plano, mude nos dois lugares.
