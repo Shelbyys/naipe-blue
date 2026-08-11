@@ -40,10 +40,11 @@ O `checkout.html` já aponta pra `http://localhost:7789` quando aberto em
 ## Registrar o webhook (uma vez, depois do primeiro deploy)
 
 A Asaas avisa este servidor quando um Pix é pago. Depois de publicar a API
-num domínio público:
+num domínio público (local, com `.env`, ou direto no console do serviço no
+EasyPanel, onde as env vars já estão carregadas):
 
 ```bash
-node --env-file=.env scripts/setup-webhook.js https://api.seudominio.com.br
+node scripts/setup-webhook.js https://api.seudominio.com.br seu@email.com
 ```
 
 ## Deploy (Docker / EasyPanel)
