@@ -48,6 +48,13 @@ class OrderStore {
   get(id) {
     return this.orders.get(id) || null;
   }
+
+  // Mais recentes primeiro
+  list(limit = 50) {
+    return [...this.orders.values()]
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .slice(0, limit);
+  }
 }
 
 module.exports = { OrderStore };

@@ -37,11 +37,22 @@ Deve responder `{"ok":true,"asaas":true,"env":"sandbox"}` — se `asaas` vier
 O `checkout.html` já aponta pra `http://localhost:7789` quando aberto em
 `localhost` — não precisa mudar nada pra testar os dois juntos localmente.
 
+## Painel (/admin)
+
+Página simples pra não precisar ficar entrando no console do servidor pra
+tudo. Mostra se a Asaas está conectada, lista os pedidos recentes, e registra
+o webhook com um clique (sem precisar rodar o script manualmente).
+
+Defina `ADMIN_USER` e `ADMIN_PASSWORD` no `.env` (ou no painel do EasyPanel)
+pra habilitar — sem essas duas variáveis, `/admin` fica desligado. Acesse em
+`https://SEU-DOMINIO-DA-API/admin` e faça login com esse usuário/senha
+(pedido pelo próprio navegador, autenticação HTTP Basic).
+
 ## Registrar o webhook (uma vez, depois do primeiro deploy)
 
-A Asaas avisa este servidor quando um Pix é pago. Depois de publicar a API
-num domínio público (local, com `.env`, ou direto no console do serviço no
-EasyPanel, onde as env vars já estão carregadas):
+A Asaas avisa este servidor quando um Pix é pago. O jeito mais simples é
+pelo painel (`/admin`, seção "Registrar webhook") — só informar seu e-mail
+e clicar no botão. Alternativa via terminal, se preferir:
 
 ```bash
 node scripts/setup-webhook.js https://api.seudominio.com.br seu@email.com

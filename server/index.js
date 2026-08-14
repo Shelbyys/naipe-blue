@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { Asaas } = require('./asaas');
 const { OrderStore } = require('./store');
+const { buildAdminRouter } = require('./admin');
 
 const PORT = Number(process.env.PORT) || 7789;
 const ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox';
@@ -38,6 +39,8 @@ app.get('/', (_req, res) => res.json({
   health: '/health',
 }));
 app.get('/health', (_req, res) => res.json({ ok: true, asaas: asaas.enabled, env: ASAAS_ENV }));
+
+app.use('/admin', buildAdminRouter({ asaas, store, asaasEnv: ASAAS_ENV, webhookToken: ASAAS_WEBHOOK_TOKEN }));
 
 // ---------- limite simples de tentativas por IP (a rota mexe com pagamento de verdade) ----------
 const attempts = new Map(); // ip -> [timestamps]
