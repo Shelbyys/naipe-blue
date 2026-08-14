@@ -39,9 +39,16 @@ O `checkout.html` já aponta pra `http://localhost:7789` quando aberto em
 
 ## Painel (/admin)
 
-Página simples pra não precisar ficar entrando no console do servidor pra
-tudo. Mostra se a Asaas está conectada, lista os pedidos recentes, e registra
-o webhook com um clique (sem precisar rodar o script manualmente).
+Página pra configurar tudo da Asaas sem precisar mexer nas variáveis de
+ambiente do EasyPanel a cada mudança: chave de API, ambiente (sandbox/
+produção), token do webhook (com botão pra gerar um novo) e a origem
+permitida (CORS). Também mostra se a Asaas está conectada, lista os
+pedidos recentes e registra o webhook com um clique.
+
+O que é salvo pelo painel (`server/data/settings.json`, no mesmo volume
+dos pedidos) tem **prioridade** sobre as variáveis de ambiente — pensado
+pra configurar tudo por ali depois do primeiro deploy. O botão "Excluir
+tudo" apaga esse arquivo e volta a usar só as env vars do servidor.
 
 Defina `ADMIN_USER` e `ADMIN_PASSWORD` no `.env` (ou no painel do EasyPanel)
 pra habilitar — sem essas duas variáveis, `/admin` fica desligado. Acesse em

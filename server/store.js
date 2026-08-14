@@ -55,6 +55,11 @@ class OrderStore {
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
       .slice(0, limit);
   }
+
+  clear() {
+    this.orders.clear();
+    this._save();
+  }
 }
 
 module.exports = { OrderStore };

@@ -6,15 +6,53 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { Asaas } = require('./asaas');
 const { OrderStore } = require('./store');
+const { Settings } = require('./settings');
 const { buildAdminRouter } = require('./admin');
 
 const PORT = Number(process.env.PORT) || 7789;
-const ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox';
-const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || '';
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 
-const asaas = new Asaas(process.env.ASAAS_API_KEY, ASAAS_ENV);
+const settings = new Settings(process.env.SETTINGS_FILE);
 const store = new OrderStore(process.env.DATA_FILE);
+
+// O que estiver salvo pelo /admin (settings.json) tem prioridade sobre a
+// env var — pensado pra configurar tudo pela interface, sem redeploy.
+// São "let" de propósito: o /admin muda esses valores em tempo real.
+let ASAAS_ENV = settings.get('asaasEnv', process.env.ASAAS_ENV || 'sandbox');
+let ASAAS_WEBHOOK_TOKEN = settings.get('asaasWebhookToken', process.env.ASAAS_WEBHOOK_TOKEN || '');
+let ALLOWED_ORIGIN = settings.get('allowedOrigin', process.env.ALLOWED_ORIGIN || '*');
+
+const asaas = new Asaas(settings.get('asaasApiKey', process.env.ASAAS_API_KEY), ASAAS_ENV);
+
+// Aplica uma mudança feita pelo /admin (chamado pelo admin.js)
+function applySettings(patch) {
+  settings.setMany(patch);
+  if (patch.asaasApiKey !== undefined) {
+    asaas.apiKey = settings.get('asaasApiKey', process.env.ASAAS_API_KEY || '');
+  }
+  if (patch.asaasEnv !== undefined) {
+    ASAAS_ENV = settings.get('asaasEnv', process.env.ASAAS_ENV || 'sandbox');
+    asaas.base = ASAAS_ENV === 'production'
+      ? 'https://api.asaas.com/v3'
+      : 'https://sandbox.asaas.com/api/v3';
+  }
+  if (patch.asaasWebhookToken !== undefined) {
+    ASAAS_WEBHOOK_TOKEN = settings.get('asaasWebhookToken', process.env.ASAAS_WEBHOOK_TOKEN || '');
+  }
+  if (patch.allowedOrigin !== undefined) {
+    ALLOWED_ORIGIN = settings.get('allowedOrigin', process.env.ALLOWED_ORIGIN || '*');
+  }
+}
+
+function clearSettings() {
+  settings.clear();
+  asaas.apiKey = process.env.ASAAS_API_KEY || '';
+  ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox';
+  asaas.base = ASAAS_ENV === 'production'
+    ? 'https://api.asaas.com/v3'
+    : 'https://sandbox.asaas.com/api/v3';
+  ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || '';
+  ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+}
 
 // Preços definidos SÓ aqui — o valor que o navegador manda nunca é usado
 // pra cobrar; só serve pra escolher qual destes planos aplicar.
@@ -30,7 +68,14 @@ const SUBSCRIBE_DISCOUNT = 0.10;
 const app = express();
 app.set('trust proxy', true); // atrás do proxy do EasyPanel — pra pegar o IP real do comprador
 app.use(helmet());
-app.use(cors({ origin: ALLOWED_ORIGIN === '*' ? true : ALLOWED_ORIGIN.split(',') }));
+// Função (não valor fixo) porque ALLOWED_ORIGIN pode mudar em tempo real via /admin
+app.use(cors({
+  origin: (origin, cb) => {
+    if (ALLOWED_ORIGIN === '*') return cb(null, true);
+    const allowed = ALLOWED_ORIGIN.split(',').map((s) => s.trim());
+    cb(null, !origin || allowed.includes(origin));
+  },
+}));
 app.use(express.json({ limit: '200kb' }));
 
 app.get('/', (_req, res) => res.json({
@@ -40,7 +85,16 @@ app.get('/', (_req, res) => res.json({
 }));
 app.get('/health', (_req, res) => res.json({ ok: true, asaas: asaas.enabled, env: ASAAS_ENV }));
 
-app.use('/admin', buildAdminRouter({ asaas, store, asaasEnv: ASAAS_ENV, webhookToken: ASAAS_WEBHOOK_TOKEN }));
+app.use('/admin', buildAdminRouter({
+  asaas,
+  store,
+  settings,
+  getAsaasEnv: () => ASAAS_ENV,
+  getWebhookToken: () => ASAAS_WEBHOOK_TOKEN,
+  getAllowedOrigin: () => ALLOWED_ORIGIN,
+  applySettings,
+  clearSettings,
+}));
 
 // ---------- limite simples de tentativas por IP (a rota mexe com pagamento de verdade) ----------
 const attempts = new Map(); // ip -> [timestamps]
