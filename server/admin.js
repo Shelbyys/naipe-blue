@@ -104,6 +104,12 @@ const PAGE = `<!DOCTYPE html>
   .status-OVERDUE, .status-FAILED { background: rgba(239,68,68,.15); color: var(--red); }
   .empty { color: rgba(255,255,255,.35); font-size: 13px; padding: 12px 0; }
   .card-head { display: flex; justify-content: space-between; align-items: center; }
+  .plan-cfg { border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-top: 14px; }
+  .plan-cfg:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .plan-cfg h3 { font-size: 13px; font-weight: 800; color: var(--gold-lt); margin: 0 0 10px; letter-spacing: .3px; text-transform: uppercase; }
+  .plan-cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .plan-cfg-grid .f label { display: block; font-size: 11px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+  .plan-cfg-grid .f input { padding: 8px 10px; font-size: 13px; }
 </style>
 </head>
 <body>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naipe Azul — Pagamento via Pix</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+        --bg:      #EEF2F8;
+        --card:    #FFFFFF;
+        --border:  #E5E9F2;
+        --ink:     #0B1220;
+        --muted:   #6B7280;
+        --blue:    #2F80ED;
+        --blue-soft:#EAF2FE;
+        --gold:    #C9A84C;
+        --gold-lt: #E8C97A;
+        --green:   #16A34A;
+        --red:     #DC2626;
+        --navy:    #080F1E;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family:'Inter', system-ui, sans-serif;
+        background:var(--bg);
+        color:var(--ink);
+        min-height:100vh;
+    }
+
+    header {
+        background:var(--navy);
+        padding:16px 24px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+    .header-logo img { height:30px; width:auto; }
+    .header-secure {
+        font-size:12px; font-weight:700; color:var(--green);
+        display:flex; align-items:center; gap:5px;
+    }
+
+    main { max-width:480px; margin:0 auto; padding:32px 20px 60px; }
+
+    .card {
+        background:var(--card); border:1px solid var(--border); border-radius:16px;
+        padding:32px 24px; text-align:center;
+    }
+
+    /* ── ANEL DE CARREGAMENTO ── */
+    .ring { width:120px; height:120px; margin:0 auto 24px; position:relative; }
+    .ring svg { transform:rotate(-90deg); }
+    .ring circle { fill:none; stroke-width:7; stroke-linecap:round; }
+    .ring .track { stroke:var(--border); }
+    .ring .bar { stroke:var(--blue); transition:stroke-dashoffset .3s linear; }
+    .ring-label {
+        position:absolute; inset:0;
+        display:flex; align-items:center; justify-content:center;
+        font-size:26px; font-weight:900;
+    }
+    .ring-label small { font-size:14px; font-weight:700; color:var(--muted); margin-left:2px; }
+
+    .loading-title { font-size:17px; font-weight:800; margin-bottom:6px; }
+    .loading-caption { font-size:13px; color:var(--muted); min-height:18px; }
+
+    /* ── RESULTADO PIX ── */
+    .pix-box img { width:220px; height:220px; margin:0 auto 16px; display:block; border-radius:8px; }
+    .pix-hint { font-size:13px; color:var(--muted); margin-bottom:16px; }
+    .pix-copy-row { display:flex; gap:8px; margin-bottom:18px; }
+    .pix-copy-row input {
+        flex:1; min-width:0;
+        background:#F8F9FC; border:1px solid var(--border); border-radius:9px;
+        padding:11px 12px; font-size:12px; color:var(--ink); font-family:inherit;
+    }
+    .pix-copy-row button {
+        background:var(--blue); color:#fff; border:none; border-radius:9px;
+        padding:0 18px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer;
+        flex-shrink:0;
+    }
+    .pix-status {
+        font-size:14px; font-weight:700; color:var(--muted);
+        display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .pix-status.paid { color:var(--green); }
+    .pulse-dot {
+        width:8px; height:8px; border-radius:50%; background:var(--blue);
+        animation:pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+
+    .error-box { color:var(--red); font-size:14px; font-weight:600; margin-bottom:16px; }
+    .btn-back {
+        display:inline-block; margin-top:8px;
+        background:var(--blue-soft); color:var(--blue); text-decoration:none;
+        border-radius:9px; padding:11px 20px; font-size:13px; font-weight:700;
+    }
+
+    .summary {
+        margin-top:20px; background:var(--card); border:1px solid var(--border);
+        border-radius:14px; padding:16px 20px;
+        display:flex; justify-content:space-between; font-size:13px;
+    }
+    .summary b { font-size:16px; }
+    .summary [hidden] { display:none; }
+
+    [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-logo"><img src="logo.png" alt="Naipe Azul"></div>
+    <div class="header-secure">🔒 Compra 100% segura</div>
+</header>
+
+<main>
+    <div class="card" id="loadingState">
+        <div class="ring">
+            <svg width="120" height="120">
+                <circle class="track" cx="60" cy="60" r="53"></circle>
+                <circle class="bar" id="ringBar" cx="60" cy="60" r="53"></circle>
+            </svg>
+            <div class="ring-label"><span id="ringPct">0</span><small>%</small></div>
+        </div>
+        <div class="loading-title">Gerando seu Pix…</div>
+        <div class="loading-caption" id="loadingCaption">Validando seus dados</div>
+    </div>
+
+    <div class="card" id="pixState" hidden>
+        <div class="pix-box">
+            <img id="pixQrImg" alt="QR Code Pix">
+            <p class="pix-hint">Escaneie com o app do seu banco ou copie o código abaixo</p>
+            <div class="pix-copy-row">
+                <input type="text" id="pixCopyPaste" readonly>
+                <button type="button" id="pixCopyBtn">Copiar</button>
+            </div>
+            <p class="pix-status" id="pixStatusText"><span class="pulse-dot"></span> Aguardando pagamento…</p>
+        </div>
+    </div>
+
+    <div class="card" id="errorState" hidden>
+        <div class="error-box" id="errorMsg">Não foi possível gerar o Pix.</div>
+        <a href="checkout.html" class="btn-back">← Voltar ao checkout</a>
+    </div>
+
+    <div class="summary" id="summaryBox" hidden>
+        <span id="summaryPlan">—</span>
+        <b id="summaryValue">—</b>
+    </div>
+</main>
+
+<script>
+(function () {
+    const API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+        ? 'http://localhost:7789'
+        : 'https://alisson-naipe-api.wdgseb.easypanel.host';
+
+    const $ = id => document.getElementById(id);
+    const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const PLAN_LABELS = { essencial: 'Essencial', confianca: 'Confiança', performance: 'Performance' };
+
+    const R = 53, CIRC = 2 * Math.PI * R;
+    const ringBar = $('ringBar');
+    ringBar.style.strokeDasharray = CIRC;
+    ringBar.style.strokeDashoffset = CIRC;
+
+    const CAPTIONS = ['Validando seus dados', 'Conectando com a Asaas', 'Gerando o QR Code'];
+    let pct = 0, capIdx = 0, ringTimer = null, capTimer = null;
+
+    function paintRing(target) {
+        pct = Math.min(target, pct + 2);
+        ringBar.style.strokeDashoffset = CIRC - (CIRC * pct / 100);
+        $('ringPct').textContent = Math.round(pct);
+    }
+
+    function startAnim() {
+        ringTimer = setInterval(() => paintRing(90), 60);
+        capTimer = setInterval(() => {
+            capIdx = (capIdx + 1) % CAPTIONS.length;
+            $('loadingCaption').textContent = CAPTIONS[capIdx];
+        }, 1100);
+    }
+    function finishAnim(cb) {
+        clearInterval(ringTimer);
+        clearInterval(capTimer);
+        const t = setInterval(() => {
+            pct = Math.min(100, pct + 4);
+            ringBar.style.strokeDashoffset = CIRC - (CIRC * pct / 100);
+            $('ringPct').textContent = Math.round(pct);
+            if (pct >= 100) { clearInterval(t); setTimeout(cb, 350); }
+        }, 20);
+    }
+
+    function showError(msg) {
+        $('loadingState').hidden = true;
+        $('errorState').hidden = false;
+        $('errorMsg').textContent = msg;
+    }
+
+    let pollTimer = null;
+    function pollOrder(paymentId) {
+        pollTimer = setInterval(async () => {
+            try {
+                const r = await fetch(`${API_BASE}/api/orders/${paymentId}`);
+                const data = await r.json();
+                if (!data.ok) return;
+                if (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(data.status)) {
+                    clearInterval(pollTimer);
+                    const statusEl = $('pixStatusText');
+                    statusEl.innerHTML = '✓ Pagamento confirmado! Seu pedido já foi liberado.';
+                    statusEl.classList.add('paid');
+                }
+            } catch { /* tenta de novo no próximo ciclo */ }
+        }, 4000);
+    }
+
+    $('pixCopyBtn').addEventListener('click', () => {
+        const input = $('pixCopyPaste');
+        input.select();
+        navigator.clipboard?.writeText(input.value).catch(() => {});
+        $('pixCopyBtn').textContent = 'Copiado!';
+        setTimeout(() => { $('pixCopyBtn').textContent = 'Copiar'; }, 2000);
+    });
+
+    (async function init() {
+        const raw = sessionStorage.getItem('naipeAzulPixPayload');
+        if (!raw) { showError('Não encontramos os dados do seu pedido. Volte e tente de novo.'); return; }
+
+        let payload;
+        try { payload = JSON.parse(raw); } catch {
+            showError('Não encontramos os dados do seu pedido. Volte e tente de novo.');
+            return;
+        }
+
+        startAnim();
+
+        try {
+            const res = await fetch(`${API_BASE}/api/checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.error || 'Não foi possível gerar o Pix.');
+
+            finishAnim(() => {
+                $('loadingState').hidden = true;
+                $('pixState').hidden = false;
+                $('summaryBox').hidden = false;
+                $('summaryPlan').textContent = PLAN_LABELS[payload.plan] || payload.plan || '—';
+                $('summaryValue').textContent = fmt(data.value);
+                $('pixQrImg').src = 'data:image/png;base64,' + data.qrImage;
+                $('pixCopyPaste').value = data.qrPayload || '';
+                pollOrder(data.paymentId);
+                sessionStorage.removeItem('naipeAzulPixPayload');
+            });
+        } catch (err) {
+            clearInterval(ringTimer);
+            clearInterval(capTimer);
+            showError(err.message || 'Falha ao conectar com o servidor de pagamento.');
+        }
+    })();
+})();
+</script>
+
+</body>
+</html>

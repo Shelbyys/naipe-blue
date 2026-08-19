@@ -54,16 +54,12 @@ function clearSettings() {
   ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 }
 
-// Preços definidos SÓ aqui — o valor que o navegador manda nunca é usado
-// pra cobrar; só serve pra escolher qual destes planos aplicar.
-// O checkout.html tem essa mesma tabela, só pra exibição — se mudar o
-// preço de um plano, mude nos dois lugares.
-const PLANS = {
-  essencial:   { name: 'Essencial',   usos: 4,  total: 207.90 },
-  confianca:   { name: 'Confiança',   usos: 12, total: 367.90 },
-  performance: { name: 'Performance', usos: 24, total: 493.40 },
-};
-const SUBSCRIBE_DISCOUNT = 0.10;
+// Planos: vêm do settings.js (editáveis pelo /admin, com os padrões como
+// base). O valor que o navegador manda no checkout NUNCA é usado pra
+// cobrar — só escolhe qual destes planos aplicar; o preço de verdade
+// é sempre lido daqui, no momento da cobrança.
+function getPlans() { return settings.getPlans(); }
+function getSubscribeDiscountPct() { return settings.getSubscribeDiscount(); }
 
 const app = express();
 app.set('trust proxy', true); // atrás do proxy do EasyPanel — pra pegar o IP real do comprador
@@ -85,6 +81,12 @@ app.get('/', (_req, res) => res.json({
 }));
 app.get('/health', (_req, res) => res.json({ ok: true, asaas: asaas.enabled, env: ASAAS_ENV }));
 
+// Público (sem auth) — o checkout.html busca os planos aqui em vez de ter
+// os preços fixados no HTML, pra nunca ficar dessincronizado do que cobra.
+app.get('/api/plans', (_req, res) => {
+  res.json({ plans: getPlans(), subscribeDiscountPct: getSubscribeDiscountPct() });
+});
+
 app.use('/admin', buildAdminRouter({
   asaas,
   store,
@@ -94,6 +96,10 @@ app.use('/admin', buildAdminRouter({
   getAllowedOrigin: () => ALLOWED_ORIGIN,
   applySettings,
   clearSettings,
+  getPlans,
+  setPlans: (patch) => settings.setPlans(patch),
+  getSubscribeDiscountPct,
+  setSubscribeDiscountPct: (pct) => settings.setSubscribeDiscount(pct),
 }));
 
 // ---------- limite simples de tentativas por IP (a rota mexe com pagamento de verdade) ----------
@@ -130,7 +136,7 @@ app.post('/api/checkout', async (req, res) => {
   }
 
   const b = req.body || {};
-  const plan = PLANS[b.plan];
+  const plan = getPlans()[b.plan];
   if (!plan) return res.status(400).json({ ok: false, error: 'Plano inválido.' });
 
   const method = b.paymentMethod === 'CREDIT_CARD' ? 'CREDIT_CARD' : b.paymentMethod === 'PIX' ? 'PIX' : null;
@@ -146,7 +152,7 @@ app.post('/api/checkout', async (req, res) => {
   if (cpf.length !== 11) return res.status(400).json({ ok: false, error: 'CPF inválido.' });
   if (phone.length < 10) return res.status(400).json({ ok: false, error: 'WhatsApp inválido.' });
 
-  const value = round2(plan.total * (b.subscribed ? 1 - SUBSCRIBE_DISCOUNT : 1));
+  const value = round2(plan.total * (b.subscribed ? 1 - getSubscribeDiscountPct() / 100 : 1));
   const description = `Naipe Azul — Kit ${plan.name} (${plan.usos} usos)`;
 
   try {
