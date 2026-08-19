@@ -299,6 +299,7 @@
         .gallery-item:hover img { transform: scale(1.04); }
         .gallery-item.tall { grid-row: span 2; }
         .gallery-item.tall img { height: 100%; }
+        .gallery-item.wide { grid-column: span 2; }
 
         /* ── TICKER ── */
         .ticker { background: var(--blue-el); padding: 13px 0; overflow: hidden; }
@@ -1038,12 +1039,8 @@
         <div class="gallery-item reveal" style="transition-delay:.2s">
             <img src="img-hero.jpg" alt="Naipe Azul — embalagem" loading="lazy">
         </div>
-        <!-- coluna 2 linha 2 -->
-        <div class="gallery-item reveal" style="transition-delay:.3s">
-            <img src="img-pocket.png" alt="Naipe Azul — no dia a dia" loading="lazy">
-        </div>
-        <!-- coluna 3 linha 2: destaque com overlay -->
-        <div class="gallery-item gallery-cta reveal-right" style="transition-delay:.35s">
+        <!-- linha 2: destaque com overlay, ocupando as duas colunas -->
+        <div class="gallery-item gallery-cta wide reveal-right" style="transition-delay:.3s">
             <img src="img-pill-close.jpg" alt="Naipe Azul — pastilha" loading="lazy" style="object-position: center;">
             <div class="gallery-overlay">
                 <span class="gallery-overlay-tag">♦ Naipe Azul</span>
