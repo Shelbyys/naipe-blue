@@ -152,6 +152,24 @@ const PAGE = `<!DOCTYPE html>
   </div>
 
   <div class="card">
+    <h2>Planos e ofertas</h2>
+    <p class="hint">
+      Preço "De" e "% OFF" em branco fazem a tarja riscada e o selo de desconto não aparecerem
+      no checkout. "Meses de estoque" só serve pra calcular a linha "Equivale a R$/mês".
+    </p>
+
+    <label class="lbl">Desconto por assinatura (%)</label>
+    <input id="cfgSubscribeDiscount" type="number" min="0" max="90" placeholder="10">
+
+    <div id="plansCfgBox" style="margin-top:14px">Carregando…</div>
+
+    <div class="actions">
+      <button id="savePlansBtn" type="button">Salvar planos</button>
+    </div>
+    <div id="plansMsg"></div>
+  </div>
+
+  <div class="card">
     <h2>Registrar webhook</h2>
     <p class="hint">
       A Asaas precisa saber pra onde avisar quando um pagamento é confirmado.
@@ -228,6 +246,70 @@ async function loadSettings() {
     document.getElementById('cfgEnv').value = s.asaasEnv;
     document.getElementById('cfgOrigin').value = s.allowedOrigin === '*' ? '' : s.allowedOrigin;
   } catch (err) { /* status card já cobre o essencial */ }
+}
+
+const PLAN_KEYS = ['essencial', 'confianca', 'performance'];
+const PLAN_HEADS = { essencial: 'Essencial', confianca: 'Confiança', performance: 'Performance' };
+
+function planField(key, attr, label, value, type) {
+  const id = 'plan_' + key + '_' + attr;
+  const v = value === null || value === undefined ? '' : value;
+  const escaped = String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return '<div class="f"><label>' + label + '</label><input id="' + id + '" type="' + type + '" value="' + escaped + '"></div>';
+}
+
+async function loadPlansConfig() {
+  const box = document.getElementById('plansCfgBox');
+  try {
+    const { plans, subscribeDiscountPct } = await api('/admin/api/plans');
+    document.getElementById('cfgSubscribeDiscount').value = subscribeDiscountPct;
+    box.innerHTML = PLAN_KEYS.map(function (key) {
+      const p = plans[key] || {};
+      return '<div class="plan-cfg"><h3>' + PLAN_HEADS[key] + '</h3><div class="plan-cfg-grid">' +
+        planField(key, 'name', 'Nome', p.name, 'text') +
+        planField(key, 'usos', 'Usos', p.usos, 'number') +
+        planField(key, 'total', 'Preço atual (R$)', p.total, 'number') +
+        planField(key, 'from', 'Preço "De" (R$, opcional)', p.from, 'number') +
+        planField(key, 'offPct', '% OFF (opcional)', p.offPct, 'number') +
+        planField(key, 'badge', 'Selo (opcional)', p.badge, 'text') +
+        planField(key, 'monthsSupply', 'Meses de estoque', p.monthsSupply, 'number') +
+        '</div></div>';
+    }).join('');
+  } catch (err) {
+    box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
+  }
+}
+
+async function savePlans() {
+  const btn = document.getElementById('savePlansBtn');
+  const msg = document.getElementById('plansMsg');
+  btn.disabled = true; msg.textContent = 'Salvando…'; msg.style.color = 'rgba(255,255,255,.5)';
+  try {
+    const plansPatch = {};
+    PLAN_KEYS.forEach(function (key) {
+      const val = function (attr) { return document.getElementById('plan_' + key + '_' + attr).value.trim(); };
+      plansPatch[key] = {
+        name: val('name'),
+        usos: Number(val('usos')) || 0,
+        total: Number(val('total')) || 0,
+        from: val('from') === '' ? null : Number(val('from')),
+        offPct: val('offPct') === '' ? null : Number(val('offPct')),
+        badge: val('badge') || null,
+        monthsSupply: Number(val('monthsSupply')) || 1,
+      };
+    });
+    const subscribeDiscountPct = Number(document.getElementById('cfgSubscribeDiscount').value) || 0;
+
+    await api('/admin/api/plans', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plans: plansPatch, subscribeDiscountPct }),
+    });
+    msg.textContent = '✓ Planos salvos.'; msg.style.color = '#22C55E';
+  } catch (err) {
+    msg.textContent = 'Falha: ' + err.message; msg.style.color = '#EF4444';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function loadOrders() {
@@ -331,14 +413,17 @@ document.getElementById('genTokenBtn').addEventListener('click', function () {
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 document.getElementById('clearSettingsBtn').addEventListener('click', clearSettings);
 document.getElementById('clearOrdersBtn').addEventListener('click', clearOrders);
+document.getElementById('savePlansBtn').addEventListener('click', savePlans);
 
 loadStatus();
 loadSettings();
+loadPlansConfig();
 loadOrders();
 `;
 
 function buildAdminRouter({
   asaas, store, getAsaasEnv, getWebhookToken, getAllowedOrigin, applySettings, clearSettings,
+  getPlans, setPlans, getSubscribeDiscountPct, setSubscribeDiscountPct,
 }) {
   const router = express.Router();
   router.use(basicAuth);
@@ -377,6 +462,33 @@ function buildAdminRouter({
 
   router.post('/api/settings/clear', (_req, res) => {
     clearSettings();
+    res.json({ ok: true });
+  });
+
+  router.get('/api/plans', (_req, res) => {
+    res.json({ plans: getPlans(), subscribeDiscountPct: getSubscribeDiscountPct() });
+  });
+
+  router.post('/api/plans', (req, res) => {
+    const b = req.body || {};
+    const PLAN_KEYS = ['essencial', 'confianca', 'performance'];
+    const patch = {};
+    PLAN_KEYS.forEach((key) => {
+      const p = (b.plans || {})[key];
+      if (!p || typeof p !== 'object') return;
+      patch[key] = {
+        name: String(p.name || '').trim() || undefined,
+        usos: Number(p.usos) || undefined,
+        total: Number(p.total) || undefined,
+        from: p.from === null || p.from === undefined || p.from === '' ? null : Number(p.from),
+        offPct: p.offPct === null || p.offPct === undefined || p.offPct === '' ? null : Number(p.offPct),
+        badge: p.badge ? String(p.badge).trim() : null,
+        monthsSupply: Number(p.monthsSupply) || undefined,
+      };
+      Object.keys(patch[key]).forEach((k) => { if (patch[key][k] === undefined) delete patch[key][k]; });
+    });
+    setPlans(patch);
+    if (typeof b.subscribeDiscountPct === 'number') setSubscribeDiscountPct(b.subscribeDiscountPct);
     res.json({ ok: true });
   });
 

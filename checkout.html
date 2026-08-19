@@ -136,6 +136,7 @@
 
     /* ── PLAN CARDS ── */
     .plans { display:flex; flex-direction:column; gap:12px; margin-bottom:8px; }
+    .empty-plans { text-align:center; color:var(--muted); font-size:13px; padding:20px 0; }
     .plan-opt {
         position:relative;
         background:var(--card);
@@ -385,7 +386,7 @@
                 <input type="checkbox" id="subToggle">
                 <span class="slider"></span>
             </span>
-            <span class="subscribe-label">Assine e Economize 10%</span>
+            <span class="subscribe-label">Assine e Economize <span id="subscribeDiscountLabel">10</span>%</span>
             <span class="reco-tag">★ Recomendado</span>
         </label>
 
@@ -398,57 +399,7 @@
         </div>
 
         <div class="plans" id="plans">
-            <div class="plan-opt" data-plan="essencial">
-                <div class="plan-opt-top">
-                    <div class="plan-opt-name">ESSENCIAL <small>(4 usos)</small></div>
-                </div>
-                <div class="plan-opt-row">
-                    <div class="plan-opt-freight">Frete Grátis</div>
-                    <div class="plan-opt-price"><b>R$ 207,90</b></div>
-                </div>
-                <div class="plan-opt-row">
-                    <div></div>
-                    <div class="plan-opt-peruse">R$ 51,98/uso</div>
-                </div>
-            </div>
-
-            <div class="plan-opt selected" data-plan="confianca">
-                <div class="plan-opt-top">
-                    <div class="plan-opt-name">CONFIANÇA <small>(12 usos)</small></div>
-                    <div class="plan-opt-badge">Mais vendido</div>
-                </div>
-                <div class="plan-opt-row">
-                    <div class="plan-opt-freight">Frete Grátis</div>
-                    <div class="plan-opt-off">32% OFF</div>
-                </div>
-                <div class="plan-opt-row">
-                    <div class="plan-opt-month">Equivale a R$ 122,63/mês</div>
-                    <div class="plan-opt-price"><s>R$ 518,73</s><b>R$ 367,90</b></div>
-                </div>
-                <div class="plan-opt-row">
-                    <div></div>
-                    <div class="plan-opt-peruse">R$ 30,66/uso</div>
-                </div>
-            </div>
-
-            <div class="plan-opt" data-plan="performance">
-                <div class="plan-opt-top">
-                    <div class="plan-opt-name">PERFORMANCE <small>(24 usos)</small></div>
-                    <div class="plan-opt-badge">Maior economia</div>
-                </div>
-                <div class="plan-opt-row">
-                    <div class="plan-opt-freight">Frete Grátis</div>
-                    <div class="plan-opt-off">41% OFF</div>
-                </div>
-                <div class="plan-opt-row">
-                    <div class="plan-opt-month">Equivale a R$ 82,23/mês</div>
-                    <div class="plan-opt-price"><s>R$ 789,44</s><b>R$ 493,40</b></div>
-                </div>
-                <div class="plan-opt-row">
-                    <div></div>
-                    <div class="plan-opt-peruse">R$ 20,56/uso</div>
-                </div>
-            </div>
+            <div class="empty-plans" id="plansLoading">Carregando planos…</div>
         </div>
 
         <div class="installment" id="installmentLine">ou <b>12x de R$ 30,66</b> sem juros</div>
@@ -593,7 +544,7 @@
 
         <div class="totals">
             <div class="t-row"><span>Plano selecionado</span><span id="tPlanName">Confiança (12 usos)</span></div>
-            <div class="t-row discount" id="subRow" hidden><span>Desconto assinatura (10%)</span><span id="tSubDiscount">- R$ 36,79</span></div>
+            <div class="t-row discount" id="subRow" hidden><span>Desconto assinatura (<span id="subRowPct">10</span>%)</span><span id="tSubDiscount">- R$ 36,79</span></div>
             <div class="t-row"><span>Frete</span><span class="free">Grátis</span></div>
             <div class="t-row total"><span>Total</span><span id="tTotal">R$ 367,90</span></div>
             <div class="t-note" id="giftNote" hidden>🎁 Sérum 3 em 1 incluso de brinde</div>
@@ -615,13 +566,16 @@
         ? 'http://localhost:7789'
         : 'https://alisson-naipe-api.wdgseb.easypanel.host';
 
-    // Só pra EXIBIÇÃO. Quem cobra de verdade é o server/index.js, que tem
-    // essa mesma tabela — se mudar o preço de um plano, mude nos dois lugares.
-    const PLANS = {
-        essencial:   { name: 'Essencial',   usos: 4,  total: 207.90 },
-        confianca:   { name: 'Confiança',   usos: 12, total: 367.90 },
-        performance: { name: 'Performance', usos: 24, total: 493.40 }
+    // Buscados de ${API_BASE}/api/plans (editáveis pelo /admin — veja
+    // server/settings.js). Só usa esse fallback se a API estiver fora do ar.
+    const PLAN_KEYS = ['essencial', 'confianca', 'performance'];
+    const FALLBACK_PLANS = {
+        essencial:   { name: 'Essencial',   usos: 4,  total: 207.90, from: null,   offPct: null, badge: null,               monthsSupply: 1 },
+        confianca:   { name: 'Confiança',   usos: 12, total: 367.90, from: 518.73, offPct: 32,   badge: 'Mais vendido',     monthsSupply: 3 },
+        performance: { name: 'Performance', usos: 24, total: 493.40, from: 789.44, offPct: 41,   badge: 'Maior economia',   monthsSupply: 6 },
     };
+    let PLANS = FALLBACK_PLANS;
+    let SUBSCRIBE_DISCOUNT_PCT = 10;
 
     // Mapeia a frequência escolhida no funil pro plano equivalente
     const FREQ_TO_PLAN = {
@@ -648,6 +602,39 @@
     dots.forEach(d => d.addEventListener('click', () => paintHero(parseInt(d.dataset.i))));
     setInterval(() => paintHero((heroIdx + 1) % slides.length), 4000);
 
+    // ── Cards de plano (montados a partir do /api/plans) ──
+    function planCardHtml(key, p) {
+        const hasDiscount = !!(p.offPct || p.from);
+        const monthLine = p.monthsSupply > 1 ? 'Equivale a ' + fmt(p.total / p.monthsSupply) + '/mês' : '';
+        const priceHtml = (p.from ? '<s>' + fmt(p.from) + '</s>' : '') + '<b>' + fmt(p.total) + '</b>';
+
+        let rows;
+        if (hasDiscount) {
+            rows =
+                '<div class="plan-opt-row"><div class="plan-opt-freight">Frete Grátis</div>' +
+                (p.offPct ? '<div class="plan-opt-off">' + p.offPct + '% OFF</div>' : '<div></div>') + '</div>' +
+                '<div class="plan-opt-row"><div class="plan-opt-month">' + monthLine + '</div>' +
+                '<div class="plan-opt-price">' + priceHtml + '</div></div>';
+        } else {
+            rows =
+                '<div class="plan-opt-row"><div class="plan-opt-freight">Frete Grátis</div>' +
+                '<div class="plan-opt-price">' + priceHtml + '</div></div>';
+        }
+        rows += '<div class="plan-opt-row"><div></div><div class="plan-opt-peruse">' + fmt(p.total / p.usos) + '/uso</div></div>';
+
+        return '<div class="plan-opt" data-plan="' + key + '">' +
+            '<div class="plan-opt-top"><div class="plan-opt-name">' + p.name.toUpperCase() + ' <small>(' + p.usos + ' usos)</small></div>' +
+            (p.badge ? '<div class="plan-opt-badge">' + p.badge + '</div>' : '') + '</div>' +
+            rows + '</div>';
+    }
+
+    function renderPlanCards() {
+        document.getElementById('plans').innerHTML = PLAN_KEYS.map(key => planCardHtml(key, PLANS[key])).join('');
+        document.querySelectorAll('.plan-opt').forEach(el => {
+            el.addEventListener('click', () => selectPlan(el.dataset.plan));
+        });
+    }
+
     // ── Seleção de plano ──
     function selectPlan(key) {
         selected = key;
@@ -656,9 +643,6 @@
         });
         paintTotals();
     }
-    document.querySelectorAll('.plan-opt').forEach(el => {
-        el.addEventListener('click', () => selectPlan(el.dataset.plan));
-    });
 
     // ── Assinatura (-10%) ──
     document.getElementById('subToggle').addEventListener('change', e => {
@@ -679,7 +663,7 @@
     function paintTotals() {
         const plan = PLANS[selected];
         const base = plan.total;
-        const total = subscribed ? base * 0.9 : base;
+        const total = subscribed ? base * (1 - SUBSCRIBE_DISCOUNT_PCT / 100) : base;
         const perUse = total / plan.usos;
 
         document.getElementById('installmentLine').innerHTML =
@@ -709,10 +693,28 @@
         paintInstallmentSelect(total);
     }
 
-    // ── Plano vindo do funil (se houver) ──
-    const chosenFreq = localStorage.getItem('naipeAzulFrequencia');
-    if (chosenFreq && FREQ_TO_PLAN[chosenFreq]) selectPlan(FREQ_TO_PLAN[chosenFreq]);
-    else paintTotals();
+    // ── Busca os planos (com fallback se a API estiver fora do ar) e então renderiza ──
+    (async function initPlans() {
+        try {
+            const r = await fetch(`${API_BASE}/api/plans`);
+            const data = await r.json();
+            if (data && data.plans) {
+                PLANS = data.plans;
+                SUBSCRIBE_DISCOUNT_PCT = data.subscribeDiscountPct;
+            }
+        } catch { /* segue com FALLBACK_PLANS */ }
+
+        document.getElementById('subscribeDiscountLabel').textContent = SUBSCRIBE_DISCOUNT_PCT;
+        document.getElementById('subRowPct').textContent = SUBSCRIBE_DISCOUNT_PCT;
+        renderPlanCards();
+
+        const chosenFreq = localStorage.getItem('naipeAzulFrequencia');
+        if (chosenFreq && FREQ_TO_PLAN[chosenFreq] && PLANS[FREQ_TO_PLAN[chosenFreq]]) {
+            selectPlan(FREQ_TO_PLAN[chosenFreq]);
+        } else {
+            selectPlan('confianca');
+        }
+    })();
 
     // ── Abas de pagamento ──
     document.querySelectorAll('.pay-tab').forEach(tab => {
