@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naipe Azul — Pedido Confirmado</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+        --bg:      #EEF2F8;
+        --card:    #FFFFFF;
+        --border:  #E5E9F2;
+        --ink:     #0B1220;
+        --muted:   #6B7280;
+        --blue:    #2F80ED;
+        --blue-soft:#EAF2FE;
+        --gold:    #C9A84C;
+        --gold-lt: #E8C97A;
+        --green:   #16A34A;
+        --navy:    #080F1E;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family:'Inter', system-ui, sans-serif;
+        background:var(--bg);
+        color:var(--ink);
+        min-height:100vh;
+    }
+
+    header {
+        background:var(--navy);
+        padding:16px 24px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+    .header-logo img { height:30px; width:auto; }
+    .header-secure {
+        font-size:12px; font-weight:700; color:var(--green);
+        display:flex; align-items:center; gap:5px;
+    }
+
+    main { max-width:480px; margin:0 auto; padding:40px 20px 60px; }
+
+    .success-icon {
+        width:72px; height:72px; margin:0 auto 20px;
+        background:rgba(22,163,74,.1); border:2px solid var(--green);
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:34px; color:var(--green);
+    }
+
+    .title { text-align:center; font-size:22px; font-weight:900; margin-bottom:8px; }
+    .subtitle { text-align:center; font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:28px; }
+
+    .card {
+        background:var(--card); border:1px solid var(--border); border-radius:16px;
+        padding:22px 24px; margin-bottom:16px;
+    }
+    .card h2 { font-size:14px; font-weight:800; margin-bottom:14px; }
+
+    .row { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; border-bottom:1px solid var(--border); }
+    .row:last-child { border-bottom:none; }
+    .row span:first-child { color:var(--muted); }
+    .row b { font-size:15px; }
+
+    .steps { display:flex; flex-direction:column; gap:14px; }
+    .step { display:flex; gap:12px; align-items:flex-start; }
+    .step-num {
+        width:24px; height:24px; border-radius:50%; background:var(--blue-soft); color:var(--blue);
+        font-size:12px; font-weight:800; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center;
+    }
+    .step-text { font-size:13px; color:var(--ink); line-height:1.5; }
+    .step-text b { display:block; font-size:13px; margin-bottom:2px; }
+
+    .btn-home {
+        display:block; text-align:center; margin-top:8px;
+        background:linear-gradient(135deg, var(--gold), var(--gold-lt));
+        color:var(--navy); text-decoration:none;
+        border-radius:12px; padding:16px; font-size:15px; font-weight:800;
+    }
+
+    .disclaimer { font-size:11px; color:var(--muted); text-align:center; line-height:1.6; margin-top:20px; }
+
+    [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-logo"><img src="logo.png" alt="Naipe Azul"></div>
+    <div class="header-secure">🔒 Compra 100% segura</div>
+</header>
+
+<main>
+    <div class="success-icon">✓</div>
+    <div class="title">Pedido confirmado!</div>
+    <div class="subtitle">Recebemos seu pagamento. Em instantes você recebe um e-mail com todos os detalhes.</div>
+
+    <div class="card" id="summaryCard" hidden>
+        <h2>Resumo do pedido</h2>
+        <div class="row"><span>Plano</span><b id="sPlan">—</b></div>
+        <div class="row"><span>Forma de pagamento</span><b id="sMethod">—</b></div>
+        <div class="row"><span>Valor</span><b id="sValue">—</b></div>
+        <div class="row"><span>Nº do pedido</span><b id="sId">—</b></div>
+    </div>
+
+    <div class="card">
+        <h2>O que acontece agora</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text"><b>Análise médica</b>Nosso médico parceiro avalia seu perfil e monta a fórmula certa pra você.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text"><b>Preparo e envio</b>Seu pedido é preparado e enviado em embalagem 100% discreta, sem identificação do produto.</div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text"><b>Entrega</b>Chega direto na sua porta — acompanhe o status pelo e-mail cadastrado.</div>
+            </div>
+        </div>
+    </div>
+
+    <a href="index.html" class="btn-home">Voltar ao site</a>
+
+    <p class="disclaimer">
+        A prescrição é emitida somente após análise do médico parceiro.
+        Este pedido não substitui avaliação médica completa.
+    </p>
+</main>
+
+<script>
+(function () {
+    const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const PLAN_LABELS = { essencial: 'Essencial', confianca: 'Confiança', performance: 'Performance' };
+
+    const raw = sessionStorage.getItem('naipeAzulOrderSummary');
+    if (!raw) return;
+
+    let order;
+    try { order = JSON.parse(raw); } catch { return; }
+
+    document.getElementById('summaryCard').hidden = false;
+    document.getElementById('sPlan').textContent = PLAN_LABELS[order.plan] || order.plan || '—';
+    document.getElementById('sMethod').textContent = order.method === 'PIX' ? 'Pix' : 'Cartão de crédito';
+    document.getElementById('sValue').textContent = fmt(order.value);
+    document.getElementById('sId').textContent = order.paymentId || '—';
+
+    sessionStorage.removeItem('naipeAzulOrderSummary');
+    sessionStorage.removeItem('naipeAzulPixPayload');
+})();
+</script>
+
+</body>
+</html>

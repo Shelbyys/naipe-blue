@@ -327,7 +327,6 @@
         font-size:14px; font-weight:700; line-height:1.6;
     }
     .card-result[hidden] { display:none; }
-    .card-result.approved { background:#F0FBF4; border:1px solid #CDEEDA; color:#166534; }
     .card-result.declined { background:#FEF2F2; border:1px solid #FECACA; color:#991B1B; }
     .btn-retry {
         display:block; margin:12px auto 0;
@@ -530,9 +529,6 @@
                 </div>
             </div>
             <div id="payResultCard" hidden>
-                <div class="card-result approved" id="cardApproved" hidden>
-                    ✓ Pagamento aprovado! Seu pedido já foi confirmado.
-                </div>
                 <div class="card-result declined" id="cardDeclined" hidden>
                     <span id="cardDeclinedMsg">✗ Pagamento recusado pela operadora do cartão.</span>
                     <button type="button" class="btn-retry" id="cardRetryBtn">Tentar de novo</button>
@@ -783,6 +779,11 @@
             address: {
                 postalCode: onlyDigits($('addrCep').value),
                 addressNumber: $('addrNumber').value.trim(),
+                street: $('addrStreet').value.trim(),
+                complement: $('addrComplement').value.trim(),
+                neighborhood: $('addrNeighborhood').value.trim(),
+                city: $('addrCity').value.trim(),
+                state: $('addrState').value,
             },
             card: method === 'CREDIT_CARD' ? {
                 number: onlyDigits($('cardNumber').value),
@@ -829,13 +830,19 @@
         }, 20);
     }
 
-    function showCardResult(data) {
+    function showCardResult(data, plan) {
+        const approved = ['CONFIRMED', 'RECEIVED'].includes(data.status);
+        if (approved) {
+            sessionStorage.setItem('naipeAzulOrderSummary', JSON.stringify({
+                plan, method: 'CREDIT_CARD', value: data.value, paymentId: data.paymentId,
+            }));
+            location.href = 'obrigado.html';
+            return;
+        }
         $('payResult').hidden = false;
         $('cardProcessing').hidden = true;
         $('payResultCard').hidden = false;
-        const approved = ['CONFIRMED', 'RECEIVED'].includes(data.status);
-        $('cardApproved').hidden = !approved;
-        $('cardDeclined').hidden = approved;
+        $('cardDeclined').hidden = false;
     }
 
     $('cardRetryBtn').addEventListener('click', () => {
@@ -879,7 +886,7 @@
             });
             const data = await res.json();
             if (!data.ok) throw new Error(data.error || 'Não foi possível processar o pagamento.');
-            finishCardAnim(() => showCardResult(data));
+            finishCardAnim(() => showCardResult(data, payload.plan));
         } catch (err) {
             clearInterval(cardRingTimer);
             clearInterval(cardCapTimer);

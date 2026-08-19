@@ -202,7 +202,7 @@
     }
 
     let pollTimer = null;
-    function pollOrder(paymentId) {
+    function pollOrder(paymentId, orderSummary) {
         pollTimer = setInterval(async () => {
             try {
                 const r = await fetch(`${API_BASE}/api/orders/${paymentId}`);
@@ -213,6 +213,8 @@
                     const statusEl = $('pixStatusText');
                     statusEl.innerHTML = '✓ Pagamento confirmado! Seu pedido já foi liberado.';
                     statusEl.classList.add('paid');
+                    sessionStorage.setItem('naipeAzulOrderSummary', JSON.stringify(orderSummary));
+                    setTimeout(() => { location.href = 'obrigado.html'; }, 1400);
                 }
             } catch { /* tenta de novo no próximo ciclo */ }
         }, 4000);
@@ -255,8 +257,7 @@
                 $('summaryValue').textContent = fmt(data.value);
                 $('pixQrImg').src = 'data:image/png;base64,' + data.qrImage;
                 $('pixCopyPaste').value = data.qrPayload || '';
-                pollOrder(data.paymentId);
-                sessionStorage.removeItem('naipeAzulPixPayload');
+                pollOrder(data.paymentId, { plan: payload.plan, method: 'PIX', value: data.value, paymentId: data.paymentId });
             });
         } catch (err) {
             clearInterval(ringTimer);

@@ -2,6 +2,28 @@
 
 const crypto = require('node:crypto');
 const express = require('express');
+const { streamOrdersPdf } = require('./pdf');
+
+const PAID_STATUSES = ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'];
+
+// Filtros usados tanto na listagem quanto no PDF — mesma lógica pros dois.
+function filterOrders(all, q) {
+  let list = all;
+  if (q.method === 'PIX' || q.method === 'CREDIT_CARD') {
+    list = list.filter((o) => o.method === q.method);
+  }
+  if (q.from) {
+    const t = new Date(`${q.from}T00:00:00`).getTime();
+    if (!Number.isNaN(t)) list = list.filter((o) => (o.createdAt || 0) >= t);
+  }
+  if (q.to) {
+    const t = new Date(`${q.to}T23:59:59.999`).getTime();
+    if (!Number.isNaN(t)) list = list.filter((o) => (o.createdAt || 0) <= t);
+  }
+  if (q.statusTab === 'paid') list = list.filter((o) => PAID_STATUSES.includes(o.status));
+  if (q.statusTab === 'pending') list = list.filter((o) => !PAID_STATUSES.includes(o.status));
+  return list;
+}
 
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
@@ -110,6 +132,22 @@ const PAGE = `<!DOCTYPE html>
   .plan-cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
   .plan-cfg-grid .f label { display: block; font-size: 11px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
   .plan-cfg-grid .f input { padding: 8px 10px; font-size: 13px; }
+
+  .order-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .order-tab {
+    background: rgba(255,255,255,.06); color: rgba(255,255,255,.6);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 8px;
+    padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .order-tab.active { background: rgba(30,144,255,.15); border-color: var(--blue-el); color: #fff; }
+  .filters-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+  .filters-grid .f label { display: block; font-size: 11px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+  .filters-grid .f input, .filters-grid .f select { padding: 8px 10px; font-size: 13px; }
+  .order-row { cursor: pointer; }
+  .order-row:hover td { background: rgba(255,255,255,.03); }
+  .order-detail-row td { background: rgba(255,255,255,.03); padding: 12px 10px; }
+  .order-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 12px; color: rgba(255,255,255,.7); }
+  .order-detail b { color: rgba(255,255,255,.9); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -186,9 +224,34 @@ const PAGE = `<!DOCTYPE html>
 
   <div class="card">
     <div class="card-head">
-      <h2>Pedidos recentes</h2>
+      <h2>Pedidos</h2>
       <button id="clearOrdersBtn" type="button" class="btn-danger">Limpar histórico</button>
     </div>
+
+    <div class="order-tabs">
+      <button class="order-tab active" data-status-tab="all" type="button">Todos</button>
+      <button class="order-tab" data-status-tab="pending" type="button">Pendentes</button>
+      <button class="order-tab" data-status-tab="paid" type="button">Pagos</button>
+    </div>
+
+    <div class="filters-grid">
+      <div class="f">
+        <label>Método</label>
+        <select id="filterMethod">
+          <option value="">Todos</option>
+          <option value="PIX">Pix</option>
+          <option value="CREDIT_CARD">Cartão</option>
+        </select>
+      </div>
+      <div class="f"><label>De</label><input id="filterFrom" type="date"></div>
+      <div class="f"><label>Até</label><input id="filterTo" type="date"></div>
+    </div>
+
+    <div class="actions">
+      <button id="genPdfBtn" type="button" class="btn-secondary">📄 Gerar PDF</button>
+    </div>
+
+    <p class="hint" style="margin-top:10px">Clique num pedido pra ver todos os dados (e-mail, telefone, CPF, endereço).</p>
     <div id="ordersBox">Carregando…</div>
   </div>
 </main>
@@ -312,21 +375,77 @@ async function savePlans() {
   }
 }
 
+let activeStatusTab = 'all';
+let ordersCache = [];
+
+function clientStatusLabel(s) {
+  const map = {
+    PENDING: 'Aguardando', CONFIRMED: 'Pago', RECEIVED: 'Pago',
+    RECEIVED_IN_CASH: 'Pago', OVERDUE: 'Vencido', REFUNDED: 'Estornado',
+  };
+  return map[s] || s || '—';
+}
+
+function currentFilterParams() {
+  const params = new URLSearchParams();
+  const method = document.getElementById('filterMethod').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  if (method) params.set('method', method);
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  if (activeStatusTab !== 'all') params.set('statusTab', activeStatusTab);
+  return params;
+}
+
+function orderDetailHtml(o) {
+  const addr = o.address || {};
+  const line1 = [addr.street, addr.addressNumber, addr.complement].filter(Boolean).join(', ');
+  const line2 = [addr.neighborhood, [addr.city, addr.state].filter(Boolean).join('/')].filter(Boolean).join(' — ');
+  const addrFull = [line1, line2, addr.postalCode ? 'CEP ' + addr.postalCode : ''].filter(Boolean).join(' — ') || '—';
+  return '<div class="order-detail">' +
+    '<div><b>E-mail:</b> ' + (o.email || '—') + '</div>' +
+    '<div><b>Telefone:</b> ' + (o.phone || '—') + '</div>' +
+    '<div><b>CPF:</b> ' + (o.cpf || '—') + '</div>' +
+    '<div><b>ID do pagamento:</b> ' + (o.id || '—') + '</div>' +
+    '<div style="grid-column:1/-1"><b>Endereço:</b> ' + addrFull + '</div>' +
+    '<div><b>Assinatura:</b> ' + (o.subscribed ? 'Sim' : 'Não') + '</div>' +
+    (o.installments > 1 ? '<div><b>Parcelas:</b> ' + o.installments + 'x</div>' : '') +
+    '</div>';
+}
+
+function renderOrdersTable() {
+  const box = document.getElementById('ordersBox');
+  if (!ordersCache.length) { box.innerHTML = '<div class="empty">Nenhum pedido encontrado.</div>'; return; }
+  box.innerHTML = '<table><tr><th>Data</th><th>Cliente</th><th>Plano</th><th>Método</th><th>Valor</th><th>Status</th></tr>' +
+    ordersCache.map(function (o, i) {
+      return (
+        '<tr class="order-row" data-idx="' + i + '">' +
+          '<td>' + fmtDate(o.createdAt) + '</td>' +
+          '<td>' + (o.name || '—') + '</td>' +
+          '<td>' + (o.planName || o.plan || '—') + '</td>' +
+          '<td>' + (o.method === 'PIX' ? 'Pix' : 'Cartão') + '</td>' +
+          '<td>' + fmtMoney(o.value) + '</td>' +
+          '<td><span class="status-tag status-' + o.status + '">' + clientStatusLabel(o.status) + '</span></td>' +
+        '</tr>' +
+        '<tr class="order-detail-row" id="detail-' + i + '" hidden><td colspan="6">' + orderDetailHtml(o) + '</td></tr>'
+      );
+    }).join('') + '</table>';
+
+  document.querySelectorAll('.order-row').forEach(function (row) {
+    row.addEventListener('click', function () {
+      const detail = document.getElementById('detail-' + row.dataset.idx);
+      detail.hidden = !detail.hidden;
+    });
+  });
+}
+
 async function loadOrders() {
   const box = document.getElementById('ordersBox');
   try {
-    const { orders } = await api('/admin/api/orders');
-    if (!orders.length) { box.innerHTML = '<div class="empty">Nenhum pedido ainda.</div>'; return; }
-    box.innerHTML = '<table><tr><th>Data</th><th>Plano</th><th>Método</th><th>Valor</th><th>Status</th></tr>' +
-      orders.map(function (o) {
-        return '<tr>' +
-          '<td>' + fmtDate(o.createdAt) + '</td>' +
-          '<td>' + (o.plan || '—') + '</td>' +
-          '<td>' + (o.method || '—') + '</td>' +
-          '<td>' + fmtMoney(o.value) + '</td>' +
-          '<td><span class="status-tag status-' + o.status + '">' + (o.status || '—') + '</span></td>' +
-        '</tr>';
-      }).join('') + '</table>';
+    const { orders } = await api('/admin/api/orders?' + currentFilterParams().toString());
+    ordersCache = orders;
+    renderOrdersTable();
   } catch (err) {
     box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
   }
@@ -415,6 +534,21 @@ document.getElementById('clearSettingsBtn').addEventListener('click', clearSetti
 document.getElementById('clearOrdersBtn').addEventListener('click', clearOrders);
 document.getElementById('savePlansBtn').addEventListener('click', savePlans);
 
+document.querySelectorAll('.order-tab').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    document.querySelectorAll('.order-tab').forEach(function (t) { t.classList.remove('active'); });
+    tab.classList.add('active');
+    activeStatusTab = tab.dataset.statusTab;
+    loadOrders();
+  });
+});
+document.getElementById('filterMethod').addEventListener('change', loadOrders);
+document.getElementById('filterFrom').addEventListener('change', loadOrders);
+document.getElementById('filterTo').addEventListener('change', loadOrders);
+document.getElementById('genPdfBtn').addEventListener('click', function () {
+  window.location.href = '/admin/api/orders/pdf?' + currentFilterParams().toString();
+});
+
 loadStatus();
 loadSettings();
 loadPlansConfig();
@@ -492,8 +626,19 @@ function buildAdminRouter({
     res.json({ ok: true });
   });
 
-  router.get('/api/orders', (_req, res) => {
-    res.json({ orders: store.list(50) });
+  router.get('/api/orders', (req, res) => {
+    res.json({ orders: filterOrders(store.list(100000), req.query) });
+  });
+
+  router.get('/api/orders/pdf', (req, res) => {
+    const orders = filterOrders(store.list(100000), req.query);
+    const parts = [];
+    if (req.query.method) parts.push('Método: ' + (req.query.method === 'PIX' ? 'Pix' : 'Cartão'));
+    if (req.query.from) parts.push('De: ' + req.query.from);
+    if (req.query.to) parts.push('Até: ' + req.query.to);
+    if (req.query.statusTab === 'paid') parts.push('Somente pagos');
+    if (req.query.statusTab === 'pending') parts.push('Somente pendentes');
+    streamOrdersPdf(res, orders, parts.join(' · ') || 'nenhum');
   });
 
   router.post('/api/orders/clear', (_req, res) => {

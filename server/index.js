@@ -152,8 +152,30 @@ app.post('/api/checkout', async (req, res) => {
   if (cpf.length !== 11) return res.status(400).json({ ok: false, error: 'CPF inválido.' });
   if (phone.length < 10) return res.status(400).json({ ok: false, error: 'WhatsApp inválido.' });
 
+  const addr = b.address || {};
+  const postalCode = onlyDigits(addr.postalCode);
+  const addressNumber = String(addr.addressNumber || '').trim();
+  if (postalCode.length !== 8 || !addressNumber) {
+    return res.status(400).json({ ok: false, error: 'Informe o CEP e o número do endereço.' });
+  }
+  const address = {
+    postalCode, addressNumber,
+    street: String(addr.street || '').trim(),
+    complement: String(addr.complement || '').trim(),
+    neighborhood: String(addr.neighborhood || '').trim(),
+    city: String(addr.city || '').trim(),
+    state: String(addr.state || '').trim(),
+  };
+
   const value = round2(plan.total * (b.subscribed ? 1 - getSubscribeDiscountPct() / 100 : 1));
   const description = `Naipe Azul — Kit ${plan.name} (${plan.usos} usos)`;
+
+  // Dados comuns do pedido, salvos independente da forma de pagamento —
+  // nunca inclui número de cartão/CVV, esses só passam pra Asaas.
+  const orderBase = {
+    method, plan: b.plan, planName: plan.name, value, subscribed: !!b.subscribed,
+    name, email, cpf, phone, address, createdAt: Date.now(),
+  };
 
   try {
     const customerId = await asaas.ensureCustomer({ name, email, cpfCnpj: cpf, phone, externalReference: cpf });
@@ -162,10 +184,7 @@ app.post('/api/checkout', async (req, res) => {
       const charge = await asaas.createPixCharge({
         customerId, value, description, externalReference: `${cpf}:${Date.now()}`,
       });
-      store.create({
-        id: charge.id, method, plan: b.plan, value, status: charge.status || 'PENDING',
-        name, email, createdAt: Date.now(),
-      });
+      store.create({ ...orderBase, id: charge.id, status: charge.status || 'PENDING' });
       return res.json({
         ok: true, method, paymentId: charge.id, status: charge.status, value,
         qrImage: charge.qrImage, qrPayload: charge.qrPayload, invoiceUrl: charge.invoiceUrl,
@@ -174,14 +193,8 @@ app.post('/api/checkout', async (req, res) => {
 
     // CREDIT_CARD
     const card = b.card || {};
-    const address = b.address || {};
     if (!card.number || !card.holderName || !card.expiryMonth || !card.expiryYear || !card.ccv) {
       return res.status(400).json({ ok: false, error: 'Dados do cartão incompletos.' });
-    }
-    const postalCode = onlyDigits(address.postalCode);
-    const addressNumber = String(address.addressNumber || '').trim();
-    if (postalCode.length !== 8 || !addressNumber) {
-      return res.status(400).json({ ok: false, error: 'Informe o CEP e o número do endereço.' });
     }
 
     const installments = Math.min(Math.max(parseInt(b.installments, 10) || 1, 1), 12);
@@ -199,10 +212,7 @@ app.post('/api/checkout', async (req, res) => {
       remoteIp: ip,
     });
 
-    store.create({
-      id: charge.id, method, plan: b.plan, value, status: charge.status,
-      name, email, createdAt: Date.now(),
-    });
+    store.create({ ...orderBase, id: charge.id, status: charge.status, installments });
     return res.json({ ok: true, method, paymentId: charge.id, status: charge.status, value });
   } catch (err) {
     console.error('[checkout] erro:', err.message);
