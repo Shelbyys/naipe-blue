@@ -353,6 +353,30 @@
         .stat-suffix { color: var(--gold); }
         .stat-label { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 8px; font-weight: 600; letter-spacing: .5px; }
 
+        /* ── ACOLHIMENTO (você não está sozinho) ── */
+        .empathy { background: var(--gray-bg); }
+        .empathy-inner { max-width: 880px; margin: 0 auto; text-align: center; }
+        .empathy-inner p {
+            font-size: 17px; color: var(--gray); line-height: 1.8;
+            max-width: 680px; margin: 0 auto 18px;
+        }
+        .empathy-inner p:last-of-type { margin-bottom: 40px; }
+        .empathy-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+            margin: 48px 0 44px; text-align: left;
+        }
+        .empathy-card {
+            background: var(--white); border-radius: 16px; padding: 26px 24px;
+            border: 1px solid #E5E7EB; position: relative; overflow: hidden;
+        }
+        .empathy-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--blue-el), var(--blue-viv));
+        }
+        .empathy-card .suit { font-size: 26px; display: block; margin-bottom: 10px; }
+        .empathy-card h3 { font-size: 16px; font-weight: 800; color: var(--dark-tx); margin-bottom: 6px; }
+        .empathy-card p { font-size: 13.5px; color: var(--gray); line-height: 1.6; max-width: none; margin: 0; }
+
         /* ── COMO FUNCIONA ── */
         .steps { background: var(--gray-bg); }
         .suits-grid {
@@ -555,6 +579,7 @@
             .suits-grid { grid-template-columns: 1fr 1fr; }
             .diff-grid { grid-template-columns: 1fr; }
             .reviews-grid { grid-template-columns: 1fr; }
+            .empathy-grid { grid-template-columns: 1fr; }
             .gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; padding: 0 24px; }
             .gallery-item.tall { grid-row: span 1; }
             .gallery-item img, .gallery-item.tall img { height: 220px; min-height: unset; }
@@ -830,6 +855,36 @@
         <div class="stat-label">Discrição garantida</div>
     </div>
 </div>
+
+<!-- ═══ ACOLHIMENTO ═══ -->
+<section class="empathy">
+    <div class="empathy-inner">
+        <div class="tag reveal">♥ Você não está sozinho</div>
+        <h2 class="title reveal" style="margin-bottom:28px">Calma. Isso é <em>mais comum</em><br>do que você imagina.</h2>
+        <p class="reveal">Se você chegou até aqui, provavelmente já sentiu aquele aperto — a dúvida, o desconforto, até um pouco de vergonha na hora H. Respira. Isso não é falha de caráter, não é "coisa da sua cabeça" e não é motivo pra se isolar.</p>
+        <p class="reveal" style="transition-delay:.1s">É rotina puxada, estresse, sono ruim, idade — muito mais frequente do que qualquer conversa de bar admite. A diferença entre quem resolve e quem carrega isso calado por anos não é força de vontade. É ter o caminho certo na mão, sem julgamento.</p>
+
+        <div class="empathy-grid">
+            <div class="empathy-card reveal">
+                <span class="suit">♠</span>
+                <h3>Não é fraqueza</h3>
+                <p>É biologia, rotina e estresse. Ponto final.</p>
+            </div>
+            <div class="empathy-card reveal" style="transition-delay:.1s">
+                <span class="suit">♥</span>
+                <h3>Você não está sozinho</h3>
+                <p>Muito mais homens enfrentam isso do que qualquer um admite em voz alta.</p>
+            </div>
+            <div class="empathy-card reveal" style="transition-delay:.2s">
+                <span class="suit">♦</span>
+                <h3>Dá pra resolver, e rápido</h3>
+                <p>Consulta 100% online e discreta — o primeiro passo leva menos de 2 minutos.</p>
+            </div>
+        </div>
+
+        <a href="funil.html" class="btn-primary reveal" data-cta="empatia">Quero resolver isso agora →</a>
+    </div>
+</section>
 
 <!-- ═══ GALERIA DE PRODUTO ═══ -->
 <section class="gallery">
