@@ -1,7 +1,8 @@
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
+const { getSupabase } = require('./supabaseClient');
+
+const ROW_ID = 'main';
 
 // Planos padrão — usados até o /admin salvar algo diferente.
 // monthsSupply é só pra calcular "Equivale a R$X/mês" (total / monthsSupply);
@@ -22,32 +23,34 @@ const DEFAULT_PLANS = {
 };
 const DEFAULT_SUBSCRIBE_DISCOUNT = 10; // %
 
-/* Configurações ajustáveis pelo /admin, persistidas num JSON simples
-   (mesmo volume dos pedidos). O que estiver aqui tem prioridade sobre
+/* Configurações ajustáveis pelo /admin, persistidas no Supabase (tabela
+   naipe_settings, uma linha só). O que estiver aqui tem prioridade sobre
    as env vars — pensado pra quem prefere configurar pela interface em
-   vez de editar variável de ambiente no EasyPanel a cada mudança. */
+   vez de editar variável de ambiente no EasyPanel a cada mudança.
+
+   Leituras (get/getPlans/getSubscribeDiscount) são síncronas, direto de
+   um cache em memória — carregado uma vez em init() (chamado no boot do
+   servidor, antes de qualquer request) e mantido atualizado a cada
+   escrita. Só as escritas (setMany/setPlans/setSubscribeDiscount/clear)
+   são async, porque vão até o Supabase. */
 class Settings {
-  constructor(file) {
-    this.file = file || path.join(__dirname, 'data', 'settings.json');
+  constructor() {
+    this.sb = getSupabase();
     this.data = {};
-    this._load();
+    if (!this.sb) console.error('[settings] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY não configurados — configurações do /admin não serão salvas.');
   }
 
-  _load() {
-    try {
-      this.data = JSON.parse(fs.readFileSync(this.file, 'utf8'));
-    } catch {
-      this.data = {};
-    }
+  async init() {
+    if (!this.sb) return;
+    const { data, error } = await this.sb.from('naipe_settings').select('data').eq('id', ROW_ID).maybeSingle();
+    if (error) { console.error('[settings] falha ao carregar:', error.message); return; }
+    this.data = (data && data.data) || {};
   }
 
-  _save() {
-    try {
-      fs.mkdirSync(path.dirname(this.file), { recursive: true });
-      fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2));
-    } catch (err) {
-      console.error('[settings] falha ao salvar:', err.message);
-    }
+  async _save() {
+    if (!this.sb) return;
+    const { error } = await this.sb.from('naipe_settings').upsert({ id: ROW_ID, data: this.data });
+    if (error) console.error('[settings] falha ao salvar:', error.message);
   }
 
   get(key, fallback) {
@@ -55,17 +58,17 @@ class Settings {
     return v !== undefined && v !== '' ? v : fallback;
   }
 
-  setMany(patch) {
+  async setMany(patch) {
     Object.entries(patch).forEach(([k, v]) => {
       if (v === undefined || v === null || v === '') delete this.data[k];
       else this.data[k] = v;
     });
-    this._save();
+    await this._save();
   }
 
-  clear() {
+  async clear() {
     this.data = {};
-    this._save();
+    await this._save();
   }
 
   // Planos: merge por chave, campo a campo, com os padrões — assim salvar
@@ -79,14 +82,14 @@ class Settings {
     return out;
   }
 
-  setPlans(patchByKey) {
+  async setPlans(patchByKey) {
     const current = this.data.plans || {};
     Object.entries(patchByKey).forEach(([key, patch]) => {
       if (!DEFAULT_PLANS[key]) return; // só os 3 planos existentes, por enquanto
       current[key] = { ...DEFAULT_PLANS[key], ...(current[key] || {}), ...patch };
     });
     this.data.plans = current;
-    this._save();
+    await this._save();
   }
 
   getSubscribeDiscount() {
@@ -94,9 +97,9 @@ class Settings {
     return typeof v === 'number' ? v : DEFAULT_SUBSCRIBE_DISCOUNT;
   }
 
-  setSubscribeDiscount(pct) {
+  async setSubscribeDiscount(pct) {
     this.data.subscribeDiscount = pct;
-    this._save();
+    await this._save();
   }
 }
 

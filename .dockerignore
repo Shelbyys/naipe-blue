@@ -4,3 +4,7 @@ server
 .git
 Dockerfile
 .dockerignore
+
+# Material interno (pitch de investidor) — fica versionado no git, mas
+# não precisa ser servido publicamente no domínio do site.
+pitch.html

@@ -41,3 +41,14 @@ create table if not exists naipe_funnel_events (
 create index if not exists naipe_funnel_events_type_idx on naipe_funnel_events (type);
 
 alter table naipe_funnel_events enable row level security;
+
+-- Configurações do /admin (chave da Asaas, ambiente, token de webhook,
+-- origem de CORS, planos e ofertas). Uma linha só (id fixo 'main'),
+-- guardando tudo num jsonb — mesmo formato que já era salvo em
+-- settings.json, só que agora sobrevive a redeploy.
+create table if not exists naipe_settings (
+  id    text primary key,
+  data  jsonb not null default '{}'::jsonb
+);
+
+alter table naipe_settings enable row level security;

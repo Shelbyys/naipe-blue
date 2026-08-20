@@ -683,19 +683,19 @@ function buildAdminRouter({
     });
   });
 
-  router.post('/api/settings', (req, res) => {
+  router.post('/api/settings', async (req, res) => {
     const b = req.body || {};
     const patch = {};
     if (typeof b.asaasApiKey === 'string' && b.asaasApiKey.trim()) patch.asaasApiKey = b.asaasApiKey.trim();
     if (b.asaasEnv === 'sandbox' || b.asaasEnv === 'production') patch.asaasEnv = b.asaasEnv;
     if (typeof b.asaasWebhookToken === 'string' && b.asaasWebhookToken.trim()) patch.asaasWebhookToken = b.asaasWebhookToken.trim();
     if (typeof b.allowedOrigin === 'string' && b.allowedOrigin.trim()) patch.allowedOrigin = b.allowedOrigin.trim();
-    applySettings(patch);
+    await applySettings(patch);
     res.json({ ok: true });
   });
 
-  router.post('/api/settings/clear', (_req, res) => {
-    clearSettings();
+  router.post('/api/settings/clear', async (_req, res) => {
+    await clearSettings();
     res.json({ ok: true });
   });
 
@@ -703,7 +703,7 @@ function buildAdminRouter({
     res.json({ plans: getPlans(), subscribeDiscountPct: getSubscribeDiscountPct() });
   });
 
-  router.post('/api/plans', (req, res) => {
+  router.post('/api/plans', async (req, res) => {
     const b = req.body || {};
     const PLAN_KEYS = ['essencial', 'confianca', 'performance'];
     const patch = {};
@@ -721,8 +721,8 @@ function buildAdminRouter({
       };
       Object.keys(patch[key]).forEach((k) => { if (patch[key][k] === undefined) delete patch[key][k]; });
     });
-    setPlans(patch);
-    if (typeof b.subscribeDiscountPct === 'number') setSubscribeDiscountPct(b.subscribeDiscountPct);
+    await setPlans(patch);
+    if (typeof b.subscribeDiscountPct === 'number') await setSubscribeDiscountPct(b.subscribeDiscountPct);
     res.json({ ok: true });
   });
 

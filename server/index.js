@@ -16,18 +16,29 @@ const settings = new Settings(process.env.SETTINGS_FILE);
 const store = new OrderStore();
 const events = new EventStore();
 
-// O que estiver salvo pelo /admin (settings.json) tem prioridade sobre a
-// env var — pensado pra configurar tudo pela interface, sem redeploy.
-// São "let" de propósito: o /admin muda esses valores em tempo real.
-let ASAAS_ENV = settings.get('asaasEnv', process.env.ASAAS_ENV || 'sandbox');
-let ASAAS_WEBHOOK_TOKEN = settings.get('asaasWebhookToken', process.env.ASAAS_WEBHOOK_TOKEN || '');
-let ALLOWED_ORIGIN = settings.get('allowedOrigin', process.env.ALLOWED_ORIGIN || '*');
+// Sem ALLOWED_ORIGIN configurada (nem env var, nem /admin), cai nisso em vez
+// de '*' — combinar wildcard com credentials:true (precisamos disso pro
+// sendBeacon do rastreamento do funil) deixaria QUALQUER site fazer
+// requisição autenticada pra essa API. Ainda dá pra trocar por env var ou
+// pelo /admin se o domínio mudar.
+const DEFAULT_ALLOWED_ORIGIN = 'https://naipeazul.wdgseb.easypanel.host';
 
-const asaas = new Asaas(settings.get('asaasApiKey', process.env.ASAAS_API_KEY), ASAAS_ENV);
+// Construído só com env vars — síncrono, não depende do Supabase já ter
+// respondido. Se houver algo salvo pelo /admin, o bootstrap() (no fim do
+// arquivo, depois de settings.init() carregar do Supabase) sobrescreve por
+// cima, do mesmo jeito que applySettings faz numa mudança em tempo real.
+// "asaas" fica const de propósito: só as propriedades dele mudam (nunca a
+// variável), porque o router do /admin e as rotas abaixo guardam essa
+// mesma referência.
+let ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox';
+let ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || '';
+let ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN;
+const asaas = new Asaas(process.env.ASAAS_API_KEY, ASAAS_ENV);
 
-// Aplica uma mudança feita pelo /admin (chamado pelo admin.js)
-function applySettings(patch) {
-  settings.setMany(patch);
+// Aplica uma mudança feita pelo /admin (chamado pelo admin.js) — e também
+// usado no bootstrap pra aplicar o que já estava salvo no Supabase.
+async function applySettings(patch) {
+  await settings.setMany(patch);
   if (patch.asaasApiKey !== undefined) {
     asaas.apiKey = settings.get('asaasApiKey', process.env.ASAAS_API_KEY || '');
   }
@@ -41,19 +52,19 @@ function applySettings(patch) {
     ASAAS_WEBHOOK_TOKEN = settings.get('asaasWebhookToken', process.env.ASAAS_WEBHOOK_TOKEN || '');
   }
   if (patch.allowedOrigin !== undefined) {
-    ALLOWED_ORIGIN = settings.get('allowedOrigin', process.env.ALLOWED_ORIGIN || '*');
+    ALLOWED_ORIGIN = settings.get('allowedOrigin', process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN);
   }
 }
 
-function clearSettings() {
-  settings.clear();
+async function clearSettings() {
+  await settings.clear();
   asaas.apiKey = process.env.ASAAS_API_KEY || '';
   ASAAS_ENV = process.env.ASAAS_ENV || 'sandbox';
   asaas.base = ASAAS_ENV === 'production'
     ? 'https://api.asaas.com/v3'
     : 'https://sandbox.asaas.com/api/v3';
   ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || '';
-  ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+  ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN;
 }
 
 // Planos: vêm do settings.js (editáveis pelo /admin, com os padrões como
@@ -285,7 +296,22 @@ app.post('/webhooks/asaas', async (req, res) => {
   res.json({ ok: true }); // sempre 200 pra Asaas não reenviar em loop
 });
 
-app.listen(PORT, () => {
-  console.log(`Naipe Azul API rodando na porta ${PORT}`);
-  console.log(`Asaas: ${asaas.enabled ? `ativo (${ASAAS_ENV})` : 'DESLIGADO (defina ASAAS_API_KEY)'}`);
-});
+// Carrega o que já estava salvo no Supabase (settings.init()) antes de
+// aceitar qualquer request — só depois disso o servidor sobe de verdade.
+// Se houver config salva pelo /admin, aplica por cima dos env vars com o
+// mesmo applySettings() usado numa mudança em tempo real.
+async function bootstrap() {
+  await settings.init();
+  const saved = {};
+  ['asaasApiKey', 'asaasEnv', 'asaasWebhookToken', 'allowedOrigin'].forEach((key) => {
+    const v = settings.get(key);
+    if (v !== undefined) saved[key] = v;
+  });
+  if (Object.keys(saved).length) await applySettings(saved);
+
+  app.listen(PORT, () => {
+    console.log(`Naipe Azul API rodando na porta ${PORT}`);
+    console.log(`Asaas: ${asaas.enabled ? `ativo (${ASAAS_ENV})` : 'DESLIGADO (defina ASAAS_API_KEY)'}`);
+  });
+}
+bootstrap();

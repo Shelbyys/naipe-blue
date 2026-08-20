@@ -76,11 +76,14 @@ docker build -t naipe-azul-api ./server
 docker run -p 7789:7789 --env-file server/.env naipe-azul-api
 ```
 
-## O que falta pra ir pra produção
+## Já em produção
 
-- [ ] Trocar `ASAAS_ENV=sandbox` por `production` e usar a chave de produção
-- [ ] Definir `ALLOWED_ORIGIN` com o domínio real (não deixar `*`)
-- [ ] Registrar o webhook apontando pro domínio público da API
-- [ ] Se os preços dos planos mudarem, atualizar em **dois lugares**:
-      `server/index.js` (`PLANS`, quem cobra de verdade) e `checkout.html`
-      (`PLANS`, só exibição)
+- [x] `ASAAS_ENV=production`, com a chave de produção
+- [x] `ALLOWED_ORIGIN` — sem essa env var, o servidor já cai no domínio real
+      do site por padrão (`DEFAULT_ALLOWED_ORIGIN` em `index.js`); nunca
+      defina `*` aqui, principalmente combinado com o tracking do funil
+      (`credentials: true` no CORS)
+- [x] Webhook registrado (pelo botão do `/admin`)
+- [x] Preço dos planos: só num lugar agora — `server/settings.js`
+      (editável pelo `/admin`, seção "Planos e ofertas"). O `checkout.html`
+      busca de `/api/plans` em vez de ter os valores fixos no HTML.
