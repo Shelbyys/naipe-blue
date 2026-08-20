@@ -13,8 +13,8 @@ const { buildAdminRouter } = require('./admin');
 const PORT = Number(process.env.PORT) || 7789;
 
 const settings = new Settings(process.env.SETTINGS_FILE);
-const store = new OrderStore(process.env.DATA_FILE);
-const events = new EventStore(process.env.EVENTS_FILE);
+const store = new OrderStore();
+const events = new EventStore();
 
 // O que estiver salvo pelo /admin (settings.json) tem prioridade sobre a
 // env var — pensado pra configurar tudo pela interface, sem redeploy.
@@ -96,9 +96,9 @@ app.get('/api/plans', (_req, res) => {
 // Telemetria leve do funil (cliques em "Começar", visitas ao checkout) —
 // público e best-effort: nunca deve travar a navegação do usuário nem
 // vazar erro pro front, então sempre responde 200.
-app.post('/api/events', (req, res) => {
+app.post('/api/events', async (req, res) => {
   const { type, meta } = req.body || {};
-  if (VALID_TYPES.includes(type)) events.record(type, meta);
+  if (VALID_TYPES.includes(type)) await events.record(type, meta);
   res.json({ ok: true });
 });
 
@@ -200,7 +200,7 @@ app.post('/api/checkout', async (req, res) => {
       const charge = await asaas.createPixCharge({
         customerId, value, description, externalReference: `${cpf}:${Date.now()}`,
       });
-      store.create({ ...orderBase, id: charge.id, status: charge.status || 'PENDING' });
+      await store.create({ ...orderBase, id: charge.id, status: charge.status || 'PENDING' });
       return res.json({
         ok: true, method, paymentId: charge.id, status: charge.status, value,
         qrImage: charge.qrImage, qrPayload: charge.qrPayload, invoiceUrl: charge.invoiceUrl,
@@ -228,7 +228,7 @@ app.post('/api/checkout', async (req, res) => {
       remoteIp: ip,
     });
 
-    store.create({ ...orderBase, id: charge.id, status: charge.status, installments });
+    await store.create({ ...orderBase, id: charge.id, status: charge.status, installments });
     return res.json({ ok: true, method, paymentId: charge.id, status: charge.status, value });
   } catch (err) {
     console.error('[checkout] erro:', err.message);
@@ -241,14 +241,14 @@ app.post('/api/checkout', async (req, res) => {
 
 // Pro front-end consultar se o Pix já caiu (fallback caso o webhook atrase)
 app.get('/api/orders/:id', async (req, res) => {
-  const order = store.get(req.params.id);
+  const order = await store.get(req.params.id);
   if (!order) return res.status(404).json({ ok: false, error: 'Pedido não encontrado.' });
 
   // Confere direto na Asaas também — não depende só do webhook já ter chegado
   if (order.status !== 'CONFIRMED' && order.status !== 'RECEIVED' && asaas.enabled) {
     try {
       const info = await asaas.getPayment(order.id);
-      if (info.status !== order.status) store.update(order.id, { status: info.status });
+      if (info.status !== order.status) await store.update(order.id, { status: info.status });
       return res.json({ ok: true, id: order.id, status: info.status, value: order.value, plan: order.plan });
     } catch { /* segue com o status que já temos salvo */ }
   }
@@ -257,7 +257,7 @@ app.get('/api/orders/:id', async (req, res) => {
 
 // Webhook da Asaas: confirma pagamentos (Pix e cartão pendente de análise).
 // FALHA FECHADO: sem ASAAS_WEBHOOK_TOKEN configurado, nenhuma chamada é aceita.
-app.post('/webhooks/asaas', (req, res) => {
+app.post('/webhooks/asaas', async (req, res) => {
   const given = Buffer.from(String(req.headers['asaas-access-token'] || ''));
   const expected = Buffer.from(ASAAS_WEBHOOK_TOKEN || '');
   const tokenOk = ASAAS_WEBHOOK_TOKEN
@@ -270,7 +270,7 @@ app.post('/webhooks/asaas', (req, res) => {
   try {
     const ev = req.body || {};
     const pay = ev.payment || {};
-    if (pay.id) store.update(pay.id, { status: pay.status });
+    if (pay.id) await store.update(pay.id, { status: pay.status });
   } catch (err) {
     console.error('[webhook] erro:', err.message);
   }

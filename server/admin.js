@@ -622,11 +622,11 @@ function buildAdminRouter({
   router.get('/', (_req, res) => res.type('html').send(PAGE));
   router.get('/app.js', (_req, res) => res.type('application/javascript').send(APP_JS));
 
-  router.get('/api/status', (req, res) => {
+  router.get('/api/status', async (req, res) => {
     res.json({
       asaas: asaas.enabled,
       env: getAsaasEnv(),
-      ordersCount: store.list(100000).length,
+      ordersCount: (await store.list(100000)).length,
       webhookUrl: `${req.protocol}://${req.get('host')}/webhooks/asaas`,
     });
   });
@@ -683,12 +683,12 @@ function buildAdminRouter({
     res.json({ ok: true });
   });
 
-  router.get('/api/orders', (req, res) => {
-    res.json({ orders: filterOrders(store.list(100000), req.query) });
+  router.get('/api/orders', async (req, res) => {
+    res.json({ orders: filterOrders(await store.list(100000), req.query) });
   });
 
-  router.get('/api/orders/pdf', (req, res) => {
-    const orders = filterOrders(store.list(100000), req.query);
+  router.get('/api/orders/pdf', async (req, res) => {
+    const orders = filterOrders(await store.list(100000), req.query);
     const parts = [];
     if (req.query.method) parts.push('Método: ' + (req.query.method === 'PIX' ? 'Pix' : 'Cartão'));
     if (req.query.from) parts.push('De: ' + req.query.from);
@@ -698,28 +698,28 @@ function buildAdminRouter({
     streamOrdersPdf(res, orders, parts.join(' · ') || 'nenhum');
   });
 
-  router.post('/api/orders/clear', (_req, res) => {
-    store.clear();
+  router.post('/api/orders/clear', async (_req, res) => {
+    await store.clear();
     res.json({ ok: true });
   });
 
   // Números do funil: cliques em "Começar" (index) → visitas ao checkout
   // → pedidos criados (Pix gerado / cartão enviado) → pedidos pagos.
   // "Carrinho abandonado" = pedidos criados que nunca chegaram a pago.
-  router.get('/api/funnel', (_req, res) => {
-    const allOrders = store.list(100000);
+  router.get('/api/funnel', async (_req, res) => {
+    const allOrders = await store.list(100000);
     const paidCount = allOrders.filter((o) => PAID_STATUSES.includes(o.status)).length;
     res.json({
-      funnelStarts: events.countByType('funnel_start'),
-      checkoutViews: events.countByType('checkout_view'),
+      funnelStarts: await events.countByType('funnel_start'),
+      checkoutViews: await events.countByType('checkout_view'),
       ordersCreated: allOrders.length,
       ordersPaid: paidCount,
       ordersAbandoned: allOrders.length - paidCount,
     });
   });
 
-  router.post('/api/events/clear', (_req, res) => {
-    events.clear();
+  router.post('/api/events/clear', async (_req, res) => {
+    await events.clear();
     res.json({ ok: true });
   });
 

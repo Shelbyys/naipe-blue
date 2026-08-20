@@ -7,7 +7,7 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-RUN mkdir -p /app/data && chown -R node:node /app
+RUN chown -R node:node /app
 USER node
 
 ENV NODE_ENV=production
