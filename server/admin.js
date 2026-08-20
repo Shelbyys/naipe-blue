@@ -148,6 +148,15 @@ const PAGE = `<!DOCTYPE html>
   .order-detail-row td { background: rgba(255,255,255,.03); padding: 12px 10px; }
   .order-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 12px; color: rgba(255,255,255,.7); }
   .order-detail b { color: rgba(255,255,255,.9); font-weight: 700; }
+
+  .funnel-step { margin-bottom: 14px; }
+  .funnel-step:last-child { margin-bottom: 0; }
+  .funnel-step-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+  .funnel-step-head b { font-size: 15px; }
+  .funnel-bar-track { background: rgba(255,255,255,.06); border-radius: 6px; height: 10px; overflow: hidden; }
+  .funnel-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--blue-el), var(--gold)); transition: width .4s ease; }
+  .funnel-abandoned { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.08); display: flex; justify-content: space-between; font-size: 13px; }
+  .funnel-abandoned b { color: var(--red); }
 </style>
 </head>
 <body>
@@ -220,6 +229,18 @@ const PAGE = `<!DOCTYPE html>
       <button id="webhookBtn" type="button">Registrar webhook</button>
     </div>
     <div id="webhookMsg"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Funil</h2>
+      <button id="clearEventsBtn" type="button" class="btn-danger">Limpar histórico</button>
+    </div>
+    <p class="hint">
+      Cliques em "Começar" no site → visitas ao checkout → pedidos criados (Pix gerado
+      ou cartão enviado) → pagos. "Abandonaram" é quem criou o pedido mas nunca pagou.
+    </p>
+    <div id="funnelBox">Carregando…</div>
   </div>
 
   <div class="card">
@@ -451,6 +472,40 @@ async function loadOrders() {
   }
 }
 
+function funnelStepHtml(label, count, max) {
+  const pct = max > 0 ? Math.round((count / max) * 100) : 0;
+  return '<div class="funnel-step">' +
+    '<div class="funnel-step-head"><span>' + label + '</span><b>' + count + '</b></div>' +
+    '<div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:' + pct + '%"></div></div>' +
+    '</div>';
+}
+
+async function loadFunnel() {
+  const box = document.getElementById('funnelBox');
+  try {
+    const f = await api('/admin/api/funnel');
+    const max = Math.max(f.funnelStarts, f.checkoutViews, f.ordersCreated, f.ordersPaid, 1);
+    box.innerHTML =
+      funnelStepHtml('Clicaram em "Começar"', f.funnelStarts, max) +
+      funnelStepHtml('Chegaram ao checkout', f.checkoutViews, max) +
+      funnelStepHtml('Criaram um pedido (Pix/cartão)', f.ordersCreated, max) +
+      funnelStepHtml('Pagaram', f.ordersPaid, max) +
+      '<div class="funnel-abandoned"><span>Abandonaram depois de criar o pedido</span><b>' + f.ordersAbandoned + '</b></div>';
+  } catch (err) {
+    box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
+  }
+}
+
+async function clearEvents() {
+  if (!confirm('Isso apaga o histórico de cliques/visitas do funil salvo neste servidor. Continuar?')) return;
+  try {
+    await api('/admin/api/events/clear', { method: 'POST' });
+    loadFunnel();
+  } catch (err) {
+    alert('Falha ao limpar: ' + err.message);
+  }
+}
+
 async function registerWebhook() {
   const btn = document.getElementById('webhookBtn');
   const msg = document.getElementById('webhookMsg');
@@ -532,6 +587,7 @@ document.getElementById('genTokenBtn').addEventListener('click', function () {
 document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 document.getElementById('clearSettingsBtn').addEventListener('click', clearSettings);
 document.getElementById('clearOrdersBtn').addEventListener('click', clearOrders);
+document.getElementById('clearEventsBtn').addEventListener('click', clearEvents);
 document.getElementById('savePlansBtn').addEventListener('click', savePlans);
 
 document.querySelectorAll('.order-tab').forEach(function (tab) {
@@ -552,11 +608,12 @@ document.getElementById('genPdfBtn').addEventListener('click', function () {
 loadStatus();
 loadSettings();
 loadPlansConfig();
+loadFunnel();
 loadOrders();
 `;
 
 function buildAdminRouter({
-  asaas, store, getAsaasEnv, getWebhookToken, getAllowedOrigin, applySettings, clearSettings,
+  asaas, store, events, getAsaasEnv, getWebhookToken, getAllowedOrigin, applySettings, clearSettings,
   getPlans, setPlans, getSubscribeDiscountPct, setSubscribeDiscountPct,
 }) {
   const router = express.Router();
@@ -643,6 +700,26 @@ function buildAdminRouter({
 
   router.post('/api/orders/clear', (_req, res) => {
     store.clear();
+    res.json({ ok: true });
+  });
+
+  // Números do funil: cliques em "Começar" (index) → visitas ao checkout
+  // → pedidos criados (Pix gerado / cartão enviado) → pedidos pagos.
+  // "Carrinho abandonado" = pedidos criados que nunca chegaram a pago.
+  router.get('/api/funnel', (_req, res) => {
+    const allOrders = store.list(100000);
+    const paidCount = allOrders.filter((o) => PAID_STATUSES.includes(o.status)).length;
+    res.json({
+      funnelStarts: events.countByType('funnel_start'),
+      checkoutViews: events.countByType('checkout_view'),
+      ordersCreated: allOrders.length,
+      ordersPaid: paidCount,
+      ordersAbandoned: allOrders.length - paidCount,
+    });
+  });
+
+  router.post('/api/events/clear', (_req, res) => {
+    events.clear();
     res.json({ ok: true });
   });
 

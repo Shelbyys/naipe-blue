@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { Asaas } = require('./asaas');
 const { OrderStore } = require('./store');
+const { EventStore, VALID_TYPES } = require('./events');
 const { Settings } = require('./settings');
 const { buildAdminRouter } = require('./admin');
 
@@ -13,6 +14,7 @@ const PORT = Number(process.env.PORT) || 7789;
 
 const settings = new Settings(process.env.SETTINGS_FILE);
 const store = new OrderStore(process.env.DATA_FILE);
+const events = new EventStore(process.env.EVENTS_FILE);
 
 // O que estiver salvo pelo /admin (settings.json) tem prioridade sobre a
 // env var — pensado pra configurar tudo pela interface, sem redeploy.
@@ -71,6 +73,10 @@ app.use(cors({
     const allowed = ALLOWED_ORIGIN.split(',').map((s) => s.trim());
     cb(null, !origin || allowed.includes(origin));
   },
+  // navigator.sendBeacon (usado no tracking do funil) sempre manda a
+  // requisição com credentials:'include' — sem isso o navegador bloqueia
+  // a resposta do preflight mesmo sem nenhum cookie estar de fato em jogo.
+  credentials: true,
 }));
 app.use(express.json({ limit: '200kb' }));
 
@@ -87,9 +93,19 @@ app.get('/api/plans', (_req, res) => {
   res.json({ plans: getPlans(), subscribeDiscountPct: getSubscribeDiscountPct() });
 });
 
+// Telemetria leve do funil (cliques em "Começar", visitas ao checkout) —
+// público e best-effort: nunca deve travar a navegação do usuário nem
+// vazar erro pro front, então sempre responde 200.
+app.post('/api/events', (req, res) => {
+  const { type, meta } = req.body || {};
+  if (VALID_TYPES.includes(type)) events.record(type, meta);
+  res.json({ ok: true });
+});
+
 app.use('/admin', buildAdminRouter({
   asaas,
   store,
+  events,
   settings,
   getAsaasEnv: () => ASAAS_ENV,
   getWebhookToken: () => ASAAS_WEBHOOK_TOKEN,

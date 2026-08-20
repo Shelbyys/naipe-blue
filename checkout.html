@@ -561,6 +561,12 @@
         ? 'http://localhost:7789'
         : 'https://alisson-naipe-api.wdgseb.easypanel.host';
 
+    // Telemetria do funil — só registra que a pessoa chegou ao checkout,
+    // sem nenhum dado pessoal (isso só entra quando o pedido é criado).
+    navigator.sendBeacon(API_BASE + '/api/events', new Blob(
+        [JSON.stringify({ type: 'checkout_view' })], { type: 'application/json' }
+    ));
+
     // Buscados de ${API_BASE}/api/plans (editáveis pelo /admin — veja
     // server/settings.js). Só usa esse fallback se a API estiver fora do ar.
     const PLAN_KEYS = ['essencial', 'confianca', 'performance'];
