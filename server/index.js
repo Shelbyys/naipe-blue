@@ -19,9 +19,15 @@ const events = new EventStore();
 // Sem ALLOWED_ORIGIN configurada (nem env var, nem /admin), cai nisso em vez
 // de '*' — combinar wildcard com credentials:true (precisamos disso pro
 // sendBeacon do rastreamento do funil) deixaria QUALQUER site fazer
-// requisição autenticada pra essa API. Ainda dá pra trocar por env var ou
-// pelo /admin se o domínio mudar.
-const DEFAULT_ALLOWED_ORIGIN = 'https://naipeazul.wdgseb.easypanel.host';
+// requisição autenticada pra essa API. Lista com vírgula: domínio próprio
+// novo (naipeazul.com, com e sem www) + o antigo do EasyPanel, mantido por
+// segurança enquanto o DNS do domínio novo ainda está se estabilizando.
+// Ainda dá pra trocar por env var ou pelo /admin se precisar.
+const DEFAULT_ALLOWED_ORIGIN = [
+  'https://naipeazul.com',
+  'https://www.naipeazul.com',
+  'https://naipeazul.wdgseb.easypanel.host',
+].join(',');
 
 // Construído só com env vars — síncrono, não depende do Supabase já ter
 // respondido. Se houver algo salvo pelo /admin, o bootstrap() (no fim do
