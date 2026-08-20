@@ -355,15 +355,23 @@
 
         /* ── ACOLHIMENTO (você não está sozinho) ── */
         .empathy { background: var(--gray-bg); }
-        .empathy-inner { max-width: 880px; margin: 0 auto; text-align: center; }
-        .empathy-inner p {
-            font-size: 17px; color: var(--gray); line-height: 1.8;
-            max-width: 680px; margin: 0 auto 18px;
+        .empathy-inner { max-width: 1200px; margin: 0 auto; }
+        .empathy-top {
+            display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px;
+            align-items: center; margin-bottom: 48px;
         }
-        .empathy-inner p:last-of-type { margin-bottom: 40px; }
+        .empathy-text p {
+            font-size: 17px; color: var(--gray); line-height: 1.8;
+            margin: 0 0 18px;
+        }
+        .empathy-text p:last-of-type { margin-bottom: 32px; }
+        .empathy-visual {
+            border-radius: 20px; overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,.12);
+        }
+        .empathy-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .empathy-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
-            margin: 48px 0 44px; text-align: left;
         }
         .empathy-card {
             background: var(--white); border-radius: 16px; padding: 26px 24px;
@@ -579,6 +587,7 @@
             .suits-grid { grid-template-columns: 1fr 1fr; }
             .diff-grid { grid-template-columns: 1fr; }
             .reviews-grid { grid-template-columns: 1fr; }
+            .empathy-top { grid-template-columns: 1fr; gap: 32px; }
             .empathy-grid { grid-template-columns: 1fr; }
             .gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; padding: 0 24px; }
             .gallery-item.tall { grid-row: span 1; }
@@ -859,10 +868,17 @@
 <!-- ═══ ACOLHIMENTO ═══ -->
 <section class="empathy">
     <div class="empathy-inner">
-        <div class="tag reveal">♥ Você não está sozinho</div>
-        <h2 class="title reveal" style="margin-bottom:28px">Calma. Isso é <em>mais comum</em><br>do que você imagina.</h2>
-        <p class="reveal">Se você chegou até aqui, provavelmente já sentiu aquele aperto — a dúvida, o desconforto, até um pouco de vergonha na hora H. Respira. Isso não é falha de caráter, não é "coisa da sua cabeça" e não é motivo pra se isolar.</p>
-        <p class="reveal" style="transition-delay:.1s">É rotina puxada, estresse, sono ruim, idade — muito mais frequente do que qualquer conversa de bar admite. A diferença entre quem resolve e quem carrega isso calado por anos não é força de vontade. É ter o caminho certo na mão, sem julgamento.</p>
+        <div class="empathy-top">
+            <div class="empathy-text">
+                <div class="tag reveal">♥ Você não está sozinho</div>
+                <h2 class="title reveal" style="margin-bottom:28px">Calma. Isso é <em>mais comum</em><br>do que você imagina.</h2>
+                <p class="reveal">Se você chegou até aqui, provavelmente já sentiu aquele aperto — a dúvida, o desconforto, até um pouco de vergonha na hora H. Respira. Isso não é falha de caráter, não é "coisa da sua cabeça" e não é motivo pra se isolar.</p>
+                <p class="reveal" style="transition-delay:.1s">É rotina puxada, estresse, sono ruim, idade — muito mais frequente do que qualquer conversa de bar admite. A diferença entre quem resolve e quem carrega isso calado por anos não é força de vontade. É ter o caminho certo na mão, sem julgamento.</p>
+            </div>
+            <div class="empathy-visual reveal-right">
+                <img src="img-acolhimento.jpg" alt="Naipe Azul — você não está sozinho" loading="lazy">
+            </div>
+        </div>
 
         <div class="empathy-grid">
             <div class="empathy-card reveal">
