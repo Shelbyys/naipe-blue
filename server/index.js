@@ -97,8 +97,9 @@ app.get('/api/plans', (_req, res) => {
 // público e best-effort: nunca deve travar a navegação do usuário nem
 // vazar erro pro front, então sempre responde 200.
 app.post('/api/events', async (req, res) => {
+  const ip = req.ip || req.socket.remoteAddress || '';
   const { type, meta } = req.body || {};
-  if (VALID_TYPES.includes(type)) await events.record(type, meta);
+  if (!eventsRateLimited(ip) && VALID_TYPES.includes(type)) await events.record(type, meta);
   res.json({ ok: true });
 });
 
@@ -118,24 +119,31 @@ app.use('/admin', buildAdminRouter({
   setSubscribeDiscountPct: (pct) => settings.setSubscribeDiscount(pct),
 }));
 
-// ---------- limite simples de tentativas por IP (a rota mexe com pagamento de verdade) ----------
-const attempts = new Map(); // ip -> [timestamps]
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-const RATE_MAX = 8;
-function rateLimited(ip) {
-  const now = Date.now();
-  const hist = (attempts.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  hist.push(now);
-  attempts.set(ip, hist);
-  return hist.length > RATE_MAX;
+// ---------- limite simples de tentativas por IP, por rota ----------
+function makeRateLimiter(max, windowMs) {
+  const attempts = new Map(); // ip -> [timestamps]
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, hist] of attempts) {
+      const fresh = hist.filter((t) => now - t < windowMs);
+      if (fresh.length) attempts.set(ip, fresh); else attempts.delete(ip);
+    }
+  }, 5 * 60 * 1000).unref();
+  return function limited(ip) {
+    const now = Date.now();
+    const hist = (attempts.get(ip) || []).filter((t) => now - t < windowMs);
+    hist.push(now);
+    attempts.set(ip, hist);
+    return hist.length > max;
+  };
 }
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, hist] of attempts) {
-    const fresh = hist.filter((t) => now - t < RATE_WINDOW_MS);
-    if (fresh.length) attempts.set(ip, fresh); else attempts.delete(ip);
-  }
-}, 5 * 60 * 1000).unref();
+
+// A rota de checkout mexe com pagamento de verdade — limite baixo.
+const rateLimited = makeRateLimiter(8, 10 * 60 * 1000);
+// /api/events é público e dispara em todo clique/carregamento de página —
+// limite mais folgado, e num contador separado do checkout de propósito
+// (senão um visitante navegando gastaria a cota de tentativas de pagamento).
+const eventsRateLimited = makeRateLimiter(30, 10 * 60 * 1000);
 
 function onlyDigits(s) { return String(s || '').replace(/\D/g, ''); }
 

@@ -34,9 +34,38 @@ function timingSafeEqualStr(a, b) {
   return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
 }
 
+// Só conta TENTATIVA ERRADA de senha — uma sessão de admin normal dispara
+// várias chamadas por carregamento de página (status/settings/plans/
+// orders/funnel) e nunca deveria ser barrada por isso.
+const AUTH_WINDOW_MS = 10 * 60 * 1000;
+const AUTH_MAX_FAILURES = 15;
+const authFailures = new Map(); // ip -> [timestamps]
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, hist] of authFailures) {
+    const fresh = hist.filter((t) => now - t < AUTH_WINDOW_MS);
+    if (fresh.length) authFailures.set(ip, fresh); else authFailures.delete(ip);
+  }
+}, 5 * 60 * 1000).unref();
+
+function authRateLimited(ip) {
+  const hist = authFailures.get(ip) || [];
+  return hist.filter((t) => Date.now() - t < AUTH_WINDOW_MS).length >= AUTH_MAX_FAILURES;
+}
+function recordAuthFailure(ip) {
+  const now = Date.now();
+  const hist = (authFailures.get(ip) || []).filter((t) => now - t < AUTH_WINDOW_MS);
+  hist.push(now);
+  authFailures.set(ip, hist);
+}
+
 function basicAuth(req, res, next) {
   if (!ADMIN_USER || !ADMIN_PASSWORD) {
     return res.status(503).send('Admin desabilitado — defina ADMIN_USER e ADMIN_PASSWORD no servidor.');
+  }
+  const ip = req.ip || req.socket.remoteAddress || '';
+  if (authRateLimited(ip)) {
+    return res.status(429).send('Muitas tentativas de login. Aguarde alguns minutos.');
   }
   const hdr = req.headers.authorization || '';
   const encoded = hdr.startsWith('Basic ') ? hdr.slice(6) : '';
@@ -46,6 +75,7 @@ function basicAuth(req, res, next) {
   const pass = sep === -1 ? '' : decoded.slice(sep + 1);
 
   if (!timingSafeEqualStr(user, ADMIN_USER) || !timingSafeEqualStr(pass, ADMIN_PASSWORD)) {
+    recordAuthFailure(ip);
     res.set('WWW-Authenticate', 'Basic realm="Naipe Azul Admin"');
     return res.status(401).send('Autenticação necessária.');
   }
@@ -312,7 +342,7 @@ async function loadStatus() {
       '<div class="row"><span>Pedidos registrados</span><span>' + s.ordersCount + '</span></div>';
     document.getElementById('webhookUrl').value = s.webhookUrl;
   } catch (err) {
-    box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
+    box.innerHTML = '<div class="empty">Falha ao carregar: ' + esc(err.message) + '</div>';
   }
 }
 
@@ -335,11 +365,24 @@ async function loadSettings() {
 const PLAN_KEYS = ['essencial', 'confianca', 'performance'];
 const PLAN_HEADS = { essencial: 'Essencial', confianca: 'Confiança', performance: 'Performance' };
 
+// Todo dado que veio de fora (nome/e-mail/endereço digitados por quem
+// finaliza a compra, badge de plano digitado no /admin) passa por aqui
+// antes de entrar em qualquer innerHTML — sem isso, um "nome" tipo
+// "<script>...</script>" no checkout executa na sessão autenticada de
+// quem está vendo o pedido no painel.
+function esc(v) {
+  return String(v === null || v === undefined ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function planField(key, attr, label, value, type) {
   const id = 'plan_' + key + '_' + attr;
   const v = value === null || value === undefined ? '' : value;
-  const escaped = String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-  return '<div class="f"><label>' + label + '</label><input id="' + id + '" type="' + type + '" value="' + escaped + '"></div>';
+  return '<div class="f"><label>' + label + '</label><input id="' + id + '" type="' + type + '" value="' + esc(v) + '"></div>';
 }
 
 async function loadPlansConfig() {
@@ -360,7 +403,7 @@ async function loadPlansConfig() {
         '</div></div>';
     }).join('');
   } catch (err) {
-    box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
+    box.innerHTML = '<div class="empty">Falha ao carregar: ' + esc(err.message) + '</div>';
   }
 }
 
@@ -425,13 +468,13 @@ function orderDetailHtml(o) {
   const line2 = [addr.neighborhood, [addr.city, addr.state].filter(Boolean).join('/')].filter(Boolean).join(' — ');
   const addrFull = [line1, line2, addr.postalCode ? 'CEP ' + addr.postalCode : ''].filter(Boolean).join(' — ') || '—';
   return '<div class="order-detail">' +
-    '<div><b>E-mail:</b> ' + (o.email || '—') + '</div>' +
-    '<div><b>Telefone:</b> ' + (o.phone || '—') + '</div>' +
-    '<div><b>CPF:</b> ' + (o.cpf || '—') + '</div>' +
-    '<div><b>ID do pagamento:</b> ' + (o.id || '—') + '</div>' +
-    '<div style="grid-column:1/-1"><b>Endereço:</b> ' + addrFull + '</div>' +
+    '<div><b>E-mail:</b> ' + esc(o.email || '—') + '</div>' +
+    '<div><b>Telefone:</b> ' + esc(o.phone || '—') + '</div>' +
+    '<div><b>CPF:</b> ' + esc(o.cpf || '—') + '</div>' +
+    '<div><b>ID do pagamento:</b> ' + esc(o.id || '—') + '</div>' +
+    '<div style="grid-column:1/-1"><b>Endereço:</b> ' + esc(addrFull) + '</div>' +
     '<div><b>Assinatura:</b> ' + (o.subscribed ? 'Sim' : 'Não') + '</div>' +
-    (o.installments > 1 ? '<div><b>Parcelas:</b> ' + o.installments + 'x</div>' : '') +
+    (o.installments > 1 ? '<div><b>Parcelas:</b> ' + esc(o.installments) + 'x</div>' : '') +
     '</div>';
 }
 
@@ -442,12 +485,12 @@ function renderOrdersTable() {
     ordersCache.map(function (o, i) {
       return (
         '<tr class="order-row" data-idx="' + i + '">' +
-          '<td>' + fmtDate(o.createdAt) + '</td>' +
-          '<td>' + (o.name || '—') + '</td>' +
-          '<td>' + (o.planName || o.plan || '—') + '</td>' +
+          '<td>' + esc(fmtDate(o.createdAt)) + '</td>' +
+          '<td>' + esc(o.name || '—') + '</td>' +
+          '<td>' + esc(o.planName || o.plan || '—') + '</td>' +
           '<td>' + (o.method === 'PIX' ? 'Pix' : 'Cartão') + '</td>' +
-          '<td>' + fmtMoney(o.value) + '</td>' +
-          '<td><span class="status-tag status-' + o.status + '">' + clientStatusLabel(o.status) + '</span></td>' +
+          '<td>' + esc(fmtMoney(o.value)) + '</td>' +
+          '<td><span class="status-tag status-' + esc(o.status) + '">' + esc(clientStatusLabel(o.status)) + '</span></td>' +
         '</tr>' +
         '<tr class="order-detail-row" id="detail-' + i + '" hidden><td colspan="6">' + orderDetailHtml(o) + '</td></tr>'
       );
@@ -468,7 +511,7 @@ async function loadOrders() {
     ordersCache = orders;
     renderOrdersTable();
   } catch (err) {
-    box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
+    box.innerHTML = '<div class="empty">Falha ao carregar: ' + esc(err.message) + '</div>';
   }
 }
 
@@ -492,7 +535,7 @@ async function loadFunnel() {
       funnelStepHtml('Pagaram', f.ordersPaid, max) +
       '<div class="funnel-abandoned"><span>Abandonaram depois de criar o pedido</span><b>' + f.ordersAbandoned + '</b></div>';
   } catch (err) {
-    box.innerHTML = '<div class="empty">Falha ao carregar: ' + err.message + '</div>';
+    box.innerHTML = '<div class="empty">Falha ao carregar: ' + esc(err.message) + '</div>';
   }
 }
 
