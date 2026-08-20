@@ -85,7 +85,7 @@ app.get('/', (_req, res) => res.json({
   info: 'Este serviço não é o site. É só o backend que o checkout.html chama pra criar cobranças na Asaas.',
   health: '/health',
 }));
-app.get('/health', (_req, res) => res.json({ ok: true, asaas: asaas.enabled, env: ASAAS_ENV }));
+app.get('/health', (_req, res) => res.json({ ok: true, asaas: asaas.enabled, env: ASAAS_ENV, supabase: !!store.sb }));
 
 // Público (sem auth) — o checkout.html busca os planos aqui em vez de ter
 // os preços fixados no HTML, pra nunca ficar dessincronizado do que cobra.
