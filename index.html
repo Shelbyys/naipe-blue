@@ -1345,6 +1345,26 @@
     </div>
 </section>
 
+<!-- ═══ PARALLAX BANNER 2 (produto real) ═══ -->
+<div class="parallax-banner" id="parallax-banner-2">
+    <div class="parallax-bg" id="parallax-bg-2">
+        <video autoplay muted loop playsinline preload="auto">
+            <source src="video-pour.mp4" type="video/mp4">
+        </video>
+    </div>
+    <div class="parallax-overlay"></div>
+    <div class="parallax-content">
+        <span class="parallax-suit">♠ ♥ ♦ ♣</span>
+        <h2>O produto real.<br><em>Na sua mesa.</em></h2>
+        <p>Sem imagem ilustrativa, sem promessa vazia. Essa é a pastilha Naipe Azul de verdade — a mesma que chega na sua casa, pronta pra virar o jogo.</p>
+        <div class="parallax-pill-row">
+            <span class="parallax-pill blue">♦ Produto real</span>
+            <span class="parallax-pill">Mesma fórmula, todo lote</span>
+            <span class="parallax-pill">Chega em casa, discreto</span>
+        </div>
+    </div>
+</div>
+
 <!-- ═══ DEPOIMENTOS ═══ -->
 <section class="reviews" id="depoimentos">
     <div class="tag reveal">Resultados reais</div>
@@ -1466,20 +1486,23 @@
 <script>
 /* ── PARALLAX ── */
 (function () {
-    const banner = document.getElementById('parallax-banner');
-    const bg     = document.getElementById('parallax-bg');
-    if (!banner || !bg) return;
+    const banners = Array.from(document.querySelectorAll('.parallax-banner'))
+        .map(banner => ({ banner, bg: banner.querySelector('.parallax-bg') }))
+        .filter(p => p.bg);
+    if (!banners.length) return;
 
     function onScroll() {
-        const rect   = banner.getBoundingClientRect();
-        const inView = rect.top < window.innerHeight && rect.bottom > 0;
-        if (!inView) return;
+        banners.forEach(({ banner, bg }) => {
+            const rect   = banner.getBoundingClientRect();
+            const inView = rect.top < window.innerHeight && rect.bottom > 0;
+            if (!inView) return;
 
-        // progresso: 0 quando banner entra na tela, 1 quando sai
-        const progress = 1 - (rect.bottom / (window.innerHeight + rect.height));
-        // move o fundo a 45% da velocidade do scroll
-        const offset   = progress * rect.height * 0.45;
-        bg.style.transform = `translateY(${offset}px)`;
+            // progresso: 0 quando banner entra na tela, 1 quando sai
+            const progress = 1 - (rect.bottom / (window.innerHeight + rect.height));
+            // move o fundo a 45% da velocidade do scroll
+            const offset   = progress * rect.height * 0.45;
+            bg.style.transform = `translateY(${offset}px)`;
+        });
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
